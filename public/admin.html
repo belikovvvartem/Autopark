@@ -484,13 +484,18 @@
     <div class="set-grid">
       <div class="set-card">
         <div class="set-title">Інформація магазину</div>
-        <div class="set-field"><label>Назва магазину</label><input type="text" id="cfgName" placeholder="АВТОПАРК"/></div>
         <div class="set-field"><label>Телефон (для дзвінків)</label><input type="tel" id="cfgPhone" placeholder="+380501234567"/></div>
         <div class="set-field"><label>Адреса</label><input type="text" id="cfgAddr" placeholder="м. Київ, вул. Авто 1"/></div>
         <div class="set-field"><label>Email</label><input type="email" id="cfgEmail" placeholder="info@autopark.ua"/></div>
         <div class="set-field"><label>Графік роботи</label><input type="text" id="cfgHours" placeholder="Пн–Нд: 9:00–20:00"/></div>
-        <div class="set-field"><label>Telegram (username без @)</label><input type="text" id="cfgTelegram" placeholder="autopark_ua"/></div>
         <button class="btn-save" onclick="saveSettings()">💾 Зберегти</button>
+      </div>
+      <div class="set-card">
+        <div class="set-title">QR-код сайту</div>
+        <div style="margin-bottom:16px;color:var(--muted2);font-size:.8rem">Посилання на головну сторінку каталогу</div>
+        <div id="siteQrCanvas" style="background:#fff;display:inline-block;padding:12px;margin-bottom:14px"></div>
+        <br/>
+        <button class="btn-save" style="font-size:.8rem;padding:8px 18px" onclick="downloadQr('siteQrCanvas','autopark-site-qr')">⬇ Завантажити QR</button>
       </div>
       <div class="set-card">
         <div class="set-title">Firebase</div>
@@ -660,8 +665,23 @@
   </div>
 </div>
 
+<!-- QR CODE MODAL -->
+<div class="cov" id="qrOv" onclick="closeQr()">
+  <div class="cbox" style="max-width:320px" onclick="event.stopPropagation()">
+    <div class="c-title" style="margin-bottom:6px">QR-код авто</div>
+    <div id="qrCarName" style="font-size:.78rem;color:var(--muted);margin-bottom:16px;text-align:center"></div>
+    <div id="qrCanvas" style="background:#fff;display:inline-block;padding:14px;margin-bottom:18px"></div>
+    <div id="qrUrl" style="font-size:.65rem;color:var(--muted);word-break:break-all;margin-bottom:18px;padding:0 4px"></div>
+    <div class="c-acts" style="flex-direction:column;gap:8px">
+      <button class="btn-save" style="width:100%" onclick="downloadQr('qrCanvas','car-qr')">⬇ Завантажити PNG</button>
+      <button class="btn-cancel" style="width:100%" onclick="closeQr()">Закрити</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"><div class="t-dot"></div><span id="toastMsg"></span></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -1157,6 +1177,12 @@ function renderTable() {
     (function(key){ btnEdit.onclick = async function(){ if(await verifyPerm('canEdit')) editCar(key); }; })(c._key);
     divActs.appendChild(btnEdit);
 
+    var btnQr = document.createElement('button');
+    btnQr.className = 'ab';
+    btnQr.textContent = '⬜ QR';
+    (function(key){ btnQr.onclick = function(){ openQr(key); }; })(c._key);
+    divActs.appendChild(btnQr);
+
     var btnStatus = document.createElement('button');
     btnStatus.className = 'ab cyc';
     btnStatus.textContent = '↻ Статус';
@@ -1212,6 +1238,10 @@ function renderTable() {
       bE.className = 'ab'; bE.textContent = '✏️ Ред.'; bE.disabled = !cE;
       (function(key){ bE.onclick = async function(){ if(await verifyPerm('canEdit')) editCar(key); }; })(c._key);
 
+      var bQ = document.createElement('button');
+      bQ.className = 'ab'; bQ.textContent = '⬜ QR';
+      (function(key){ bQ.onclick = function(){ openQr(key); }; })(c._key);
+
       var bS = document.createElement('button');
       bS.className = 'ab cyc'; bS.textContent = '↻ Статус'; bS.disabled = !cS;
       (function(key){ bS.onclick = async function(){ if(await verifyPerm('canStatus')) cycleStatus(key); }; })(c._key);
@@ -1220,7 +1250,7 @@ function renderTable() {
       bD.className = 'ab del'; bD.textContent = '🗑 Видалити'; bD.disabled = !cD;
       (function(key){ bD.onclick = async function(){ if(await verifyPerm('canDelete')) askDelete(key); }; })(c._key);
 
-      acts.appendChild(bE); acts.appendChild(bS); acts.appendChild(bD);
+      acts.appendChild(bE); acts.appendChild(bQ); acts.appendChild(bS); acts.appendChild(bD);
       card.appendChild(acts);
       mobCards.appendChild(card);
     });
@@ -1601,22 +1631,25 @@ async function saveAdmin() {
 //  SETTINGS
 // ═══════════════════════════════════════════
 function loadSettingsForm() {
-  const m = { Name:'name', Phone:'phone', Addr:'addr', Email:'email', Hours:'hours', Telegram:'telegram' };
+  const m = { Phone:'phone', Addr:'addr', Email:'email', Hours:'hours' };
   Object.entries(m).forEach(([k, fk]) => {
     const el = document.getElementById('cfg' + k);
     if (el && SETTINGS[fk]) el.value = SETTINGS[fk];
   });
+  // Render site QR code in settings
+  renderSiteQr();
 }
 
 async function saveSettings() {
   if (!(await verifyPerm('canSettings'))) return;
   const data = {
-    name:     document.getElementById('cfgName').value.trim(),
-    phone:    document.getElementById('cfgPhone').value.trim(),
-    addr:     document.getElementById('cfgAddr').value.trim(),
-    email:    document.getElementById('cfgEmail').value.trim(),
-    hours:    document.getElementById('cfgHours').value.trim(),
-    telegram: document.getElementById('cfgTelegram').value.trim().replace('@',''),
+    phone: document.getElementById('cfgPhone').value.trim(),
+    addr:  document.getElementById('cfgAddr').value.trim(),
+    email: document.getElementById('cfgEmail').value.trim(),
+    hours: document.getElementById('cfgHours').value.trim(),
+    // Preserve existing name and telegram from DB (don't overwrite)
+    name:     SETTINGS.name     || '',
+    telegram: SETTINGS.telegram || '',
   };
   try { await db.ref('settings').set(data); logAct('⚙️ Оновлено налаштування магазину','#9b59b6'); showToast('Збережено ✓','success'); }
   catch(e) { showToast('Помилка: '+e.message,'error'); }
@@ -1641,6 +1674,62 @@ function logAct(msg, color) {
 }
 
 // ═══════════════════════════════════════════
+//  QR CODE
+// ═══════════════════════════════════════════
+function carSlug(c) {
+  return [c.brand, c.model, c.year]
+    .filter(Boolean).join('_')
+    .replace(/\s+/g,'_')
+    .replace(/[^a-zA-Z0-9_\u0400-\u04FF]/g,'')
+    + '_' + c._key;
+}
+
+function makeQr(containerId, url, size) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = '';
+  new QRCode(el, {
+    text:          url,
+    width:         size || 200,
+    height:        size || 200,
+    colorDark:     '#000000',
+    colorLight:    '#ffffff',
+    correctLevel:  QRCode.CorrectLevel.M,
+  });
+}
+
+function openQr(key) {
+  const c = CARS.find(x => x._key === key);
+  if (!c) return;
+  const slug = carSlug(c);
+  const url  = location.origin + '/car/' + slug;
+  document.getElementById('qrCarName').textContent = c.brand + ' ' + c.model + ' ' + c.year;
+  document.getElementById('qrUrl').textContent = url;
+  makeQr('qrCanvas', url, 200);
+  document.getElementById('qrOv').classList.add('open');
+}
+function closeQr() { document.getElementById('qrOv').classList.remove('open'); }
+
+function renderSiteQr() {
+  const url = location.origin;
+  makeQr('siteQrCanvas', url, 180);
+}
+
+function downloadQr(containerId, filename) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const canvas = el.querySelector('canvas');
+  if (!canvas) { showToast('QR ще не згенеровано','error'); return; }
+  const link  = document.createElement('a');
+  link.href   = canvas.toDataURL('image/png');
+  link.download = (filename || 'qrcode') + '.png';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast('QR-код збережено ✓','success');
+}
+
+// ═══════════════════════════════════════════
 //  TOAST
 // ═══════════════════════════════════════════
 function showToast(msg, type='success') {
@@ -1648,7 +1737,7 @@ function showToast(msg, type='success') {
   t.className='toast '+type+' show'; clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),3200);
 }
 
-document.addEventListener('keydown', e => { if(e.key==='Escape'){closeDrawer();closeAdminDrawer();closeConfirm();} });
+document.addEventListener('keydown', e => { if(e.key==='Escape'){closeDrawer();closeAdminDrawer();closeConfirm();closeQr();} });
 </script>
 </body>
 </html>
