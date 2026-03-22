@@ -653,25 +653,35 @@ let R2_PUBLIC_BASE = '';
 
 async function bootstrap() {
   // Fetch config injected by Vercel (env vars never hit the browser)
-  const res = await fetch('/api/config').catch(() => null);
-  if (!res || !res.ok) {
+  const res = await fetch('/api/config').catch(e => { console.error('Config fetch failed:', e); return null; });
+
+  if (!res) {
     document.getElementById('loading').innerHTML =
-      '<div style="color:#ff4444;font-size:1rem">❌ Не вдалося завантажити конфіг.<br>Перевірте Environment Variables у Vercel.</div>';
+      '<div style="color:#ff4444;font-size:.9rem;text-align:center;padding:20px">' +
+      '❌ Не вдалося підключитись до сервера.<br><small>Перевірте інтернет-з\'єднання або відкрийте консоль (F12).</small></div>';
     return;
   }
-  const cfg = await res.json();
+
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok || !data || data.error) {
+    const msg = data?.error || `HTTP ${res.status}`;
+    console.error('Config error:', msg);
+    document.getElementById('loading').innerHTML =
+      '<div style="color:#ff4444;font-size:.9rem;text-align:center;padding:20px">' +
+      '❌ Помилка конфігурації сервера.<br>' +
+      '<small style="color:#888">' + msg + '</small><br><br>' +
+      '<small>Vercel Dashboard → Settings → Environment Variables</small></div>';
+    return;
+  }
 
   // Set R2 public base URL
-  R2_PUBLIC_BASE = cfg.r2PublicBase || '';
+  R2_PUBLIC_BASE = data.r2PublicBase || '';
 
   // Initialise Firebase
-  firebase.initializeApp(cfg.firebase);
+  firebase.initializeApp(data.firebase);
   const authInst = firebase.auth();
   const dbInst   = firebase.database();
-
-  // Make available globally (rest of the script uses these)
-  window._auth = authInst;
-  window._db   = dbInst;
 
   // Hand off to main app
   initApp(authInst, dbInst);

@@ -452,13 +452,18 @@ let db; // initialised after config loads
 // ── Bootstrap: fetch config from Vercel, then start ──────────
 (async function bootstrap() {
   const res = await fetch('/api/config').catch(() => null);
-  if (!res || !res.ok) {
+  const data = res ? await res.json().catch(() => null) : null;
+
+  if (!res || !res.ok || !data || data.error) {
+    const msg = data?.error || (res ? `HTTP ${res.status}` : 'Немає з\'єднання з сервером');
+    console.error('Config error:', msg);
     const g = document.getElementById('carsGrid');
-    if (g) g.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:#ff4444">❌ Не вдалося завантажити конфіг.<br>Зверніться до адміністратора.</div>';
+    if (g) g.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:#ff4444">' +
+      '❌ Помилка конфігурації.<br><small style="color:#888">' + msg + '</small></div>';
     return;
   }
-  const cfg = await res.json();
-  firebase.initializeApp(cfg.firebase);
+
+  firebase.initializeApp(data.firebase);
   db = firebase.database();
 
   // ── Settings listener ─────────────────────
