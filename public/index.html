@@ -469,10 +469,29 @@ let db; // initialised after config loads
   // ── Settings listener ─────────────────────
   db.ref('settings').on('value', snap => {
   const s = snap.val() || {};
-  const phone = (s.phone || '+380501234567').replace(/\s/g,'');
+
+  // ── Phone — update ALL tel: links including hero and modal call buttons ──
+  const phone = (s.phone || '+380501234567').replace(/\s/g, '');
   document.querySelectorAll('a[href^="tel:"]').forEach(a => a.href = 'tel:' + phone);
   const fp = document.getElementById('footerPhone');
-  if (fp) { fp.textContent = s.phone || '+38 (050) 123-45-67'; }
+  if (fp) { fp.textContent = s.phone || '+38 (050) 123-45-67'; fp.href = 'tel:' + phone; }
+
+  // ── Shop name — update nav logo, footer logo, page title, copyright ──
+  if (s.name && s.name.trim()) {
+    const name = s.name.trim();
+    document.title = name + ' — Авторинок преміум авто';
+    // Nav logo and footer logo (keep accent/span split if possible)
+    document.querySelectorAll('.nav-logo').forEach(el => {
+      // Try to split at halfway for two-tone effect, fallback to plain
+      const mid = Math.ceil(name.length / 2);
+      el.innerHTML = name.slice(0, mid) + '<span>' + name.slice(mid) + '</span>';
+    });
+    // Copyright line
+    const copy = document.querySelector('.footer-bottom span');
+    if (copy) copy.textContent = '© 2024 ' + name + '. Всі права захищені.';
+  }
+
+  // ── Address, hours, email ──
   const fa = document.getElementById('footerAddr');
   if (fa && s.addr) fa.textContent = s.addr;
   const fh = document.getElementById('footerHours');

@@ -392,9 +392,21 @@ function renderPage() {
   // Gallery
   buildGallery();
 
-  // Phone button
+  // Phone button — use settings phone
   const phone = (SETTINGS.phone || '+380501234567').replace(/\s/g, '');
-  document.getElementById('btnCall').href = 'tel:' + phone;
+  const btnCall = document.getElementById('btnCall');
+  btnCall.href = 'tel:' + phone;
+
+  // Shop name — update nav logo and page title suffix if set
+  if (SETTINGS.name && SETTINGS.name.trim()) {
+    const name = SETTINGS.name.trim();
+    document.title = title + ' — ' + name;
+    const logoEl = document.querySelector('.nav-logo');
+    if (logoEl) {
+      const mid = Math.ceil(name.length / 2);
+      logoEl.innerHTML = name.slice(0, mid) + '<span>' + name.slice(mid) + '</span>';
+    }
+  }
 
   // Telegram button — opens chat with admin, message pre-filled
   const pageUrl = location.href;
