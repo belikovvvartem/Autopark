@@ -552,6 +552,16 @@ function statusLabel(s) {
 
 function fmt(p) { return '$' + Number(p).toLocaleString('en-US'); }
 
+// Generate URL-friendly slug from car data
+function carSlug(c) {
+  return [c.brand, c.model, c.year]
+    .filter(Boolean)
+    .join('_')
+    .replace(/\s+/g, '_')
+    .replace(/[^a-zA-Z0-9_\u0400-\u04FF]/g, '')
+    .replace(/_+/g, '_');
+}
+
 function renderCards(cars) {
   const grid  = document.getElementById('carsGrid');
   const noRes = document.getElementById('noResults');
@@ -565,9 +575,11 @@ function renderCards(cars) {
   }
   noRes.style.display = 'none';
   grid.innerHTML = cars.map((c, i) => {
-    const fav = favorites.has(c._key);
+    const fav  = favorites.has(c._key);
+    const slug = carSlug(c);
+    const url  = '/car/' + slug + '_' + c._key;
     return `
-    <div class="car-card" style="animation-delay:${Math.min(i,.1) * 0.07}s" onclick="openModal('${c._key}')">
+    <div class="car-card" style="animation-delay:${Math.min(i,.1) * 0.07}s" onclick="location.href='${url}'">
       <div class="car-img-wrap">
         <img src="${c.img || 'https://placehold.co/400x220/15151c/555?text=🚗'}" alt="${c.brand||''} ${c.model||''}" loading="lazy"
           onerror="this.src='https://placehold.co/400x220/15151c/555?text=🚗'"/>
@@ -591,7 +603,7 @@ function renderCards(cars) {
             <div class="car-price">${fmt(c.price)}</div>
             <div class="car-price-sub">Ціна включає ПДВ</div>
           </div>
-          <button class="btn-details" onclick="openModal('${c._key}');event.stopPropagation()">Детальніше</button>
+          <a class="btn-details" href="${url}">Детальніше</a>
         </div>
       </div>
     </div>`;

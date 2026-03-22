@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>АВТОПАРК — Авто</title>
+  <!-- OG tags filled dynamically -->
+  <meta property="og:type" content="website"/>
+  <meta id="ogTitle"       property="og:title"       content="АВТОПАРК"/>
+  <meta id="ogDesc"        property="og:description"  content="Преміум автомобіль"/>
+  <meta id="ogImage"       property="og:image"        content=""/>
+  <meta id="ogUrl"         property="og:url"          content=""/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0a0a0c;--surface:#111116;--card:#15151c;--border:rgba(255,255,255,.07);
+      --accent:#e8c84a;--accent2:#ff5733;--text:#f0ede6;--muted:#7a7882;
+      --green:#2ecc71;--blue:#0088cc;
+      --font-display:'Bebas Neue',sans-serif;--font-body:'Manrope',sans-serif;
+    }
+    html{scroll-behavior:smooth}
+    body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflow-x:hidden;min-height:100vh}
+
+    /* NAV */
+    nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;
+      padding:14px 48px;background:rgba(10,10,12,.95);backdrop-filter:blur(10px);
+      border-bottom:1px solid var(--border)}
+    .nav-logo{font-family:var(--font-display);font-size:1.8rem;letter-spacing:4px;color:var(--accent);text-decoration:none}
+    .nav-logo span{color:var(--text)}
+    .back-btn{display:flex;align-items:center;gap:8px;color:var(--muted);text-decoration:none;
+      font-size:.82rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;transition:color .2s}
+    .back-btn:hover{color:var(--accent)}
+    .back-btn svg{transition:transform .2s}
+    .back-btn:hover svg{transform:translateX(-3px)}
+
+    /* LOADING / ERROR */
+    #loadingState,#errorState{display:flex;flex-direction:column;align-items:center;justify-content:center;
+      min-height:60vh;gap:16px;text-align:center;padding:40px 20px}
+    .ld-spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);
+      border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    #errorState{color:var(--muted)}
+    #errorState h2{font-family:var(--font-display);font-size:2rem;color:var(--text);margin-bottom:8px}
+
+    /* MAIN LAYOUT */
+    #carPage{display:none;max-width:1100px;margin:0 auto;padding:40px 24px 80px}
+
+    /* GALLERY */
+    .gallery{display:grid;grid-template-columns:1fr 380px;gap:10px;margin-bottom:40px}
+    .gallery-main{position:relative;overflow:hidden;background:#0a0a0f;aspect-ratio:16/10;cursor:zoom-in}
+    .gallery-main img{width:100%;height:100%;object-fit:cover;display:block}
+    .gallery-thumbs{display:grid;grid-template-rows:repeat(3,1fr);gap:6px;overflow:hidden}
+    .gallery-thumb{overflow:hidden;cursor:pointer;opacity:.65;transition:opacity .2s;aspect-ratio:16/10}
+    .gallery-thumb:hover,.gallery-thumb.active{opacity:1}
+    .gallery-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+    .gallery-more{display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);
+      font-family:var(--font-display);font-size:1.2rem;letter-spacing:2px;color:var(--text);cursor:pointer}
+    .gallery-more:hover{background:rgba(232,200,74,.2);color:var(--accent)}
+
+    /* Slider arrows on main image */
+    .gal-arr{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.55);
+      border:1px solid rgba(255,255,255,.15);color:#fff;width:44px;height:44px;
+      display:flex;align-items:center;justify-content:center;cursor:pointer;
+      font-size:1.8rem;transition:all .2s;z-index:2;backdrop-filter:blur(4px)}
+    .gal-arr:hover{background:rgba(232,200,74,.7);color:#000}
+    .gal-arr.left{left:12px}
+    .gal-arr.right{right:12px}
+
+    /* CAR HEADER */
+    .car-header{display:flex;justify-content:space-between;align-items:flex-start;
+      gap:24px;flex-wrap:wrap;margin-bottom:32px}
+    .car-header-left{}
+    .car-category{font-size:.7rem;text-transform:uppercase;letter-spacing:2px;
+      color:var(--accent);font-weight:700;margin-bottom:6px}
+    .car-title{font-family:var(--font-display);font-size:clamp(2.5rem,6vw,4rem);
+      letter-spacing:2px;line-height:1;margin-bottom:12px}
+    .car-badges{display:flex;gap:8px;flex-wrap:wrap}
+    .cbadge{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:4px 10px}
+    .cbadge-avail{background:#2ecc71;color:#000}
+    .cbadge-res{background:var(--accent);color:#000}
+    .cbadge-sold{background:var(--muted);color:#000}
+    .car-header-right{text-align:right;flex-shrink:0}
+    .car-price-big{font-family:var(--font-display);font-size:clamp(2.2rem,5vw,3.5rem);
+      color:var(--accent);letter-spacing:2px;line-height:1}
+    .car-price-note{font-size:.72rem;color:var(--muted);margin-top:4px}
+
+    /* SPECS GRID */
+    .specs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+      background:var(--border);border:1px solid var(--border);margin-bottom:32px}
+    .spec-cell{background:var(--surface);padding:16px 18px}
+    .spec-cell-key{font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;
+      color:var(--muted);margin-bottom:5px}
+    .spec-cell-val{font-weight:700;font-size:1rem;color:var(--text)}
+
+    /* DESCRIPTION */
+    .section-title{font-family:var(--font-display);font-size:1.6rem;letter-spacing:2px;
+      margin-bottom:14px;color:var(--text)}
+    .section-title span{color:var(--accent)}
+    .car-desc{color:var(--muted);font-size:.95rem;line-height:1.8;
+      white-space:pre-wrap;word-break:break-word;margin-bottom:32px}
+
+    /* ACTION BUTTONS */
+    .actions-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:40px}
+    .btn-call{background:var(--accent);color:#000;border:none;padding:14px 28px;
+      font-family:var(--font-body);font-weight:800;font-size:.9rem;letter-spacing:1px;
+      text-transform:uppercase;cursor:pointer;transition:all .2s;text-decoration:none;
+      display:inline-flex;align-items:center;gap:8px}
+    .btn-call:hover{background:#f5d55c;transform:translateY(-2px)}
+    .btn-tg{background:#0088cc;color:#fff;border:none;padding:14px 28px;
+      font-family:var(--font-body);font-weight:700;font-size:.9rem;letter-spacing:1px;
+      text-transform:uppercase;cursor:pointer;transition:all .2s;text-decoration:none;
+      display:inline-flex;align-items:center;gap:8px}
+    .btn-tg:hover{background:#0099dd;transform:translateY(-2px)}
+    .btn-share{background:transparent;color:var(--text);border:1px solid var(--border);
+      padding:14px 22px;font-family:var(--font-body);font-weight:600;font-size:.9rem;
+      letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s;
+      display:inline-flex;align-items:center;gap:8px}
+    .btn-share:hover{border-color:var(--accent);color:var(--accent)}
+    .btn-video{background:transparent;color:var(--text);border:1px solid var(--border);
+      padding:14px 22px;font-family:var(--font-body);font-weight:600;font-size:.9rem;
+      letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s;
+      display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+    .btn-video:hover{border-color:#ff4444;color:#ff4444}
+
+    /* LIGHTBOX */
+    .lightbox{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.96);
+      display:flex;align-items:center;justify-content:center;
+      opacity:0;pointer-events:none;transition:opacity .25s}
+    .lightbox.open{opacity:1;pointer-events:all}
+    .lightbox img{max-width:94vw;max-height:92vh;object-fit:contain}
+    .lb-close{position:absolute;top:18px;right:22px;background:rgba(255,255,255,.1);
+      border:1px solid rgba(255,255,255,.2);color:#fff;width:44px;height:44px;
+      border-radius:50%;display:flex;align-items:center;justify-content:center;
+      cursor:pointer;font-size:1.3rem;transition:background .2s}
+    .lb-close:hover{background:rgba(255,255,255,.22)}
+    .lb-arr{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.1);
+      border:1px solid rgba(255,255,255,.2);color:#fff;width:52px;height:52px;
+      border-radius:50%;display:flex;align-items:center;justify-content:center;
+      cursor:pointer;font-size:2rem;transition:background .2s}
+    .lb-arr:hover{background:rgba(232,200,74,.4);border-color:var(--accent)}
+    .lb-arr.left{left:18px}
+    .lb-arr.right{right:18px}
+
+    /* TOAST */
+    .toast{position:fixed;bottom:28px;right:28px;z-index:300;background:var(--card);
+      border:1px solid var(--accent);color:var(--text);padding:13px 22px;
+      font-size:.88rem;font-weight:500;transform:translateY(80px);opacity:0;
+      transition:all .35s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .toast.show{transform:translateY(0);opacity:1}
+
+    /* FOOTER */
+    .page-footer{background:var(--surface);border-top:1px solid var(--border);
+      padding:24px 48px;display:flex;justify-content:space-between;align-items:center;
+      flex-wrap:wrap;gap:12px;font-size:.82rem;color:var(--muted)}
+    .page-footer a{color:var(--accent);text-decoration:none}
+
+    /* RESPONSIVE */
+    @media(max-width:900px){
+      nav{padding:12px 16px}
+      #carPage{padding:20px 16px 80px}
+      .gallery{grid-template-columns:1fr;grid-template-rows:auto auto}
+      .gallery-thumbs{grid-template-rows:none;grid-template-columns:repeat(4,1fr);gap:5px}
+      .gallery-thumb{aspect-ratio:4/3}
+      .gallery-main{aspect-ratio:16/10}
+      .car-header{flex-direction:column;gap:12px}
+      .car-header-right{text-align:left}
+      .specs-grid{grid-template-columns:repeat(2,1fr)}
+      .actions-row{flex-direction:column}
+      .btn-call,.btn-tg,.btn-share,.btn-video{width:100%;justify-content:center}
+      .page-footer{padding:18px 16px;flex-direction:column;text-align:center}
+    }
+    @media(max-width:480px){
+      .specs-grid{grid-template-columns:1fr 1fr}
+      .gallery-thumbs{grid-template-columns:repeat(3,1fr)}
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/">АВТО<span>ПАРК</span></a>
+  <a class="back-btn" href="/">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    До каталогу
+  </a>
+</nav>
+
+<!-- Loading -->
+<div id="loadingState">
+  <div class="ld-spinner"></div>
+  <div style="color:var(--muted);font-size:.9rem">Завантаження…</div>
+</div>
+
+<!-- Error -->
+<div id="errorState" style="display:none">
+  <h2>Авто не знайдено</h2>
+  <p>Можливо, воно вже продано або посилання застаріло.</p>
+  <a href="/" style="margin-top:16px;color:var(--accent);font-weight:700;text-decoration:none">← Повернутись до каталогу</a>
+</div>
+
+<!-- Car page content -->
+<div id="carPage">
+  <!-- Gallery -->
+  <div class="gallery" id="gallery">
+    <div class="gallery-main" id="galMain" onclick="openLightbox(galIdx)">
+      <img id="galMainImg" src="" alt=""/>
+      <button class="gal-arr left"  onclick="galMove(event,-1)">&#8249;</button>
+      <button class="gal-arr right" onclick="galMove(event,1)">&#8250;</button>
+    </div>
+    <div class="gallery-thumbs" id="galThumbs"></div>
+  </div>
+
+  <!-- Header -->
+  <div class="car-header">
+    <div class="car-header-left">
+      <div class="car-category" id="carCategory"></div>
+      <div class="car-title" id="carTitle"></div>
+      <div class="car-badges" id="carBadges"></div>
+    </div>
+    <div class="car-header-right">
+      <div class="car-price-big" id="carPrice"></div>
+      <div class="car-price-note">Ціна включає ПДВ та митне оформлення</div>
+    </div>
+  </div>
+
+  <!-- Specs -->
+  <div class="specs-grid" id="specsGrid"></div>
+
+  <!-- Description -->
+  <div id="descSection" style="display:none">
+    <div class="section-title">Опис <span>авто</span></div>
+    <div class="car-desc" id="carDesc"></div>
+  </div>
+
+  <!-- Actions -->
+  <div class="actions-row">
+    <a class="btn-call" id="btnCall" href="tel:+380501234567">📞 Зателефонувати</a>
+    <a class="btn-tg"   id="btnTg"   href="#" target="_blank" rel="noopener">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.94 8.19-1.97 9.28c-.14.64-.52.8-.99.5l-2.74-2.02-1.32 1.27c-.15.15-.27.27-.55.27l.2-2.8 5.1-4.61c.22-.2-.05-.31-.34-.11L7.34 14.4l-2.7-.84c-.59-.18-.6-.59.12-.87l10.53-4.06c.49-.18.92.11.65.56z"/></svg>
+      Написати в Telegram
+    </a>
+    <button class="btn-share" onclick="shareCar()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      Поділитись
+    </button>
+    <a class="btn-video" id="btnVideo" href="#" target="_blank" rel="noopener" style="display:none">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Відеоогляд
+    </a>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lb-close" onclick="closeLightbox()">✕</button>
+  <button class="lb-arr left"  onclick="lbMove(event,-1)">&#8249;</button>
+  <img id="lbImg" src="" alt="" onclick="event.stopPropagation()"/>
+  <button class="lb-arr right" onclick="lbMove(event,1)">&#8250;</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer class="page-footer">
+  <span>© 2024 <a href="/">АВТОПАРК</a>. Всі права захищені.</span>
+  <a href="/">← Повернутись до каталогу</a>
+</footer>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script>
+'use strict';
+
+let db;
+let CAR     = null;
+let PHOTOS  = [];
+let galIdx  = 0;
+let lbIdx   = 0;
+let SETTINGS = {};
+
+// ── Extract Firebase key from URL slug ──
+// URL format: /car/BMW_X5_2023_-OLabcDef123
+function keyFromSlug() {
+  const slug = location.pathname.replace('/car/', '').trim();
+  // Firebase keys start with '-' and are alphanumeric
+  const match = slug.match(/(-[A-Za-z0-9_-]+)$/);
+  return match ? match[1] : null;
+}
+
+// ── Bootstrap ────────────────────────────
+(async function bootstrap() {
+  const res  = await fetch('/api/config').catch(() => null);
+  const data = res ? await res.json().catch(() => null) : null;
+  if (!res || !res.ok || !data || data.error) {
+    showError(); return;
+  }
+  firebase.initializeApp(data.firebase);
+  db = firebase.database();
+
+  // Load settings for phone + telegram
+  const settSnap = await db.ref('settings').once('value').catch(() => null);
+  SETTINGS = settSnap?.val() || {};
+
+  // Load car
+  const key = keyFromSlug();
+  if (!key) { showError(); return; }
+
+  const snap = await db.ref('cars/' + key).once('value').catch(() => null);
+  const car  = snap?.val();
+  if (!car) { showError(); return; }
+
+  CAR    = car;
+  CAR._key = key;
+  PHOTOS = Array.isArray(car.photos) && car.photos.length ? car.photos : (car.img ? [car.img] : []);
+  renderPage();
+})();
+
+// ── Render ───────────────────────────────
+function renderPage() {
+  const c = CAR;
+
+  // Update page title + OG tags
+  const title = (c.brand || '') + ' ' + (c.model || '') + ' ' + (c.year || '');
+  document.title = title + ' — АВТОПАРК';
+  document.getElementById('ogTitle').content  = title + ' — АВТОПАРК';
+  document.getElementById('ogDesc').content   = `${c.engine||''} · ${c.mileage||''} · $${Number(c.price||0).toLocaleString()}`;
+  document.getElementById('ogImage').content  = PHOTOS[0] || '';
+  document.getElementById('ogUrl').content    = location.href;
+
+  // Header
+  document.getElementById('carCategory').textContent = (c.brand || '') + ' · ' + (c.type || '');
+  document.getElementById('carTitle').textContent    = (c.model || '') + ' ' + (c.year || '');
+  document.getElementById('carPrice').textContent    = '$' + Number(c.price || 0).toLocaleString();
+
+  const statusMap = {
+    available: ['В наявності', 'cbadge-avail'],
+    reserved:  ['Зарезервовано', 'cbadge-res'],
+    sold:      ['Продано', 'cbadge-sold'],
+  };
+  const [stLabel, stClass] = statusMap[c.status] || ['—', ''];
+  document.getElementById('carBadges').innerHTML =
+    `<span class="cbadge ${stClass}">${stLabel}</span>`;
+
+  // Specs
+  const specs = [
+    ['Рік',        c.year],
+    ['Пробіг',     c.mileage],
+    ['Двигун',     c.engine],
+    ['Потужність', c.power],
+    ['Коробка',    c.gearbox],
+    ['Привід',     c.drive],
+    ['Тип',        c.type],
+    ['Колір',      c.color],
+  ].filter(([, v]) => v);
+  document.getElementById('specsGrid').innerHTML = specs.map(([k, v]) =>
+    `<div class="spec-cell"><div class="spec-cell-key">${k}</div><div class="spec-cell-val">${v}</div></div>`
+  ).join('');
+
+  // Description
+  if (c.desc && c.desc.trim()) {
+    document.getElementById('descSection').style.display = 'block';
+    document.getElementById('carDesc').textContent = c.desc;
+  }
+
+  // Gallery
+  buildGallery();
+
+  // Phone button
+  const phone = (SETTINGS.phone || '+380501234567').replace(/\s/g, '');
+  document.getElementById('btnCall').href = 'tel:' + phone;
+
+  // Telegram button
+  const tgUser = SETTINGS.telegram || '';
+  const pageUrl = location.href;
+  const tgText  = encodeURIComponent(`Доброго дня! Мене цікавить ${title}.\n${pageUrl}`);
+  if (tgUser) {
+    document.getElementById('btnTg').href = `https://t.me/${tgUser}?text=${tgText}`;
+  } else {
+    document.getElementById('btnTg').href = `tg://msg?text=${tgText}`;
+  }
+
+  // Video button
+  if (c.videoUrl && c.videoUrl.trim()) {
+    const vBtn = document.getElementById('btnVideo');
+    vBtn.href = c.videoUrl;
+    vBtn.style.display = 'inline-flex';
+  }
+
+  // Show page
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('carPage').style.display      = 'block';
+}
+
+// ── Gallery ──────────────────────────────
+function buildGallery() {
+  const mainImg = document.getElementById('galMainImg');
+  const thumbs  = document.getElementById('galThumbs');
+  const galMain = document.getElementById('galMain');
+
+  if (!PHOTOS.length) {
+    mainImg.src = 'https://placehold.co/900x560/15151c/555?text=🚗';
+    thumbs.style.display = 'none';
+    document.querySelector('.gal-arr.left').style.display  = 'none';
+    document.querySelector('.gal-arr.right').style.display = 'none';
+    galMain.style.cursor = 'default';
+    return;
+  }
+
+  // Hide arrows if only 1 photo
+  const hasMulti = PHOTOS.length > 1;
+  document.querySelector('.gal-arr.left').style.display  = hasMulti ? '' : 'none';
+  document.querySelector('.gal-arr.right').style.display = hasMulti ? '' : 'none';
+
+  setMainPhoto(0);
+
+  // Build thumbs (max 4, last one shows "+N more" if needed)
+  const maxThumbs = 4;
+  const shown = PHOTOS.slice(0, maxThumbs);
+  const extra = PHOTOS.length - maxThumbs;
+
+  thumbs.innerHTML = '';
+  shown.forEach((url, i) => {
+    const div = document.createElement('div');
+    div.className = 'gallery-thumb' + (i === 0 ? ' active' : '');
+    if (i === maxThumbs - 1 && extra > 0) {
+      div.className += ' gallery-more';
+      div.innerHTML = `<img src="${url}" style="opacity:.3"/><span>+${extra + 1}</span>`;
+    } else {
+      div.innerHTML = `<img src="${url}" onerror="this.src='https://placehold.co/200x130/15151c/555?text=🚗'" alt=""/>`;
+    }
+    div.onclick = () => { setMainPhoto(i); openLightbox(i); };
+    thumbs.appendChild(div);
+  });
+
+  if (!hasMulti) thumbs.style.display = 'none';
+}
+
+function setMainPhoto(idx) {
+  galIdx = idx;
+  document.getElementById('galMainImg').src = PHOTOS[idx] || '';
+  document.querySelectorAll('.gallery-thumb').forEach((el, i) => {
+    el.classList.toggle('active', i === idx);
+  });
+}
+
+function galMove(e, dir) {
+  e.stopPropagation();
+  const idx = (galIdx + dir + PHOTOS.length) % PHOTOS.length;
+  setMainPhoto(idx);
+}
+
+// ── Lightbox ─────────────────────────────
+function openLightbox(idx) {
+  lbIdx = idx;
+  document.getElementById('lbImg').src = PHOTOS[idx] || '';
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function lbMove(e, dir) {
+  e.stopPropagation();
+  lbIdx = (lbIdx + dir + PHOTOS.length) % PHOTOS.length;
+  document.getElementById('lbImg').src = PHOTOS[lbIdx] || '';
+  setMainPhoto(lbIdx);
+}
+
+// ── Share ─────────────────────────────────
+async function shareCar() {
+  const url   = location.href;
+  const title = document.title;
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, url });
+      return;
+    } catch(e) { /* user cancelled or not supported */ }
+  }
+  // Fallback: copy to clipboard
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('✅ Посилання скопійовано!');
+  } catch(e) {
+    // Last fallback
+    const ta = document.createElement('textarea');
+    ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('✅ Посилання скопійовано!');
+  }
+}
+
+// ── Error state ───────────────────────────
+function showError() {
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('errorState').style.display   = 'flex';
+}
+
+// ── Toast ─────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+document.addEventListener('keydown', e => {
+  const lb = document.getElementById('lightbox');
+  if (!lb.classList.contains('open')) return;
+  if (e.key === 'Escape')      closeLightbox();
+  if (e.key === 'ArrowLeft')   lbMove({ stopPropagation:()=>{} }, -1);
+  if (e.key === 'ArrowRight')  lbMove({ stopPropagation:()=>{} }, 1);
+});
+</script>
+</body>
+</html>

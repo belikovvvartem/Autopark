@@ -475,6 +475,7 @@
         <div class="set-field"><label>Адреса</label><input type="text" id="cfgAddr" placeholder="м. Київ, вул. Авто 1"/></div>
         <div class="set-field"><label>Email</label><input type="email" id="cfgEmail" placeholder="info@autopark.ua"/></div>
         <div class="set-field"><label>Графік роботи</label><input type="text" id="cfgHours" placeholder="Пн–Нд: 9:00–20:00"/></div>
+        <div class="set-field"><label>Telegram (username без @)</label><input type="text" id="cfgTelegram" placeholder="autopark_ua"/></div>
         <button class="btn-save" onclick="saveSettings()">💾 Зберегти</button>
       </div>
       <div class="set-card">
@@ -589,6 +590,13 @@
       <div class="fs">
         <div class="fs-title">Опис</div>
         <div class="fgroup"><textarea id="fDesc" placeholder="Деталі комплектації, стану…"></textarea></div>
+      </div>
+      <div class="fs">
+        <div class="fs-title">Відеоогляд <span style="font-size:.6rem;color:var(--muted);text-transform:none;letter-spacing:0">(TikTok або Instagram)</span></div>
+        <div class="fgroup">
+          <label>Посилання на відео</label>
+          <input type="url" id="fVideo" placeholder="https://www.tiktok.com/... або https://www.instagram.com/reel/..."/>
+        </div>
       </div>
     </div>
     <div class="df">
@@ -1297,7 +1305,7 @@ async function openDrawer(key = null) {
   if (!(await verifyPerm(permKey))) return;
   editKey = key;
   document.getElementById('dTitle').innerHTML = key ? 'Редагувати <span>авто</span>' : 'Нове <span>авто</span>';
-  ['fModel','fColor','fEngine','fPower','fMileage','fDesc'].forEach(id => { const el=document.getElementById(id); if(el){el.value='';el.classList.remove('err')} });
+  ['fModel','fColor','fEngine','fPower','fMileage','fDesc','fVideo'].forEach(id => { const el=document.getElementById(id); if(el){el.value='';el.classList.remove('err')} });
   ['fBrand','fType','fGearbox','fDrive','fStatus'].forEach(id => { const el=document.getElementById(id); if(el){el.selectedIndex=0;el.classList.remove('err')} });
   document.getElementById('fYear').value=''; document.getElementById('fPrice').value='';
   const fi = document.getElementById('fileInput'); if (fi) fi.value = '';
@@ -1319,6 +1327,7 @@ async function openDrawer(key = null) {
     document.getElementById('fDrive').value   = c.drive   || '';
     document.getElementById('fStatus').value  = c.status  || 'available';
     document.getElementById('fDesc').value    = c.desc    || '';
+    document.getElementById('fVideo').value   = c.videoUrl || '';
     photoUrls = Array.isArray(c.photos) && c.photos.length ? [...c.photos] : (c.img ? [c.img] : []);
     coverIdx  = c.coverIdx || 0;
     renderPhotos();
@@ -1357,6 +1366,7 @@ async function saveCar() {
     drive:    document.getElementById('fDrive').value,
     status:   document.getElementById('fStatus').value,
     desc:     document.getElementById('fDesc').value,
+    videoUrl: document.getElementById('fVideo').value.trim(),
     photos:   photoUrls, coverIdx, img: photoUrls[coverIdx] || '',
   };
   try {
@@ -1528,7 +1538,7 @@ async function saveAdmin() {
 //  SETTINGS
 // ═══════════════════════════════════════════
 function loadSettingsForm() {
-  const m = { Name:'name', Phone:'phone', Addr:'addr', Email:'email', Hours:'hours' };
+  const m = { Name:'name', Phone:'phone', Addr:'addr', Email:'email', Hours:'hours', Telegram:'telegram' };
   Object.entries(m).forEach(([k, fk]) => {
     const el = document.getElementById('cfg' + k);
     if (el && SETTINGS[fk]) el.value = SETTINGS[fk];
@@ -1537,7 +1547,14 @@ function loadSettingsForm() {
 
 async function saveSettings() {
   if (!(await verifyPerm('canSettings'))) return;
-  const data = { name:document.getElementById('cfgName').value.trim(), phone:document.getElementById('cfgPhone').value.trim(), addr:document.getElementById('cfgAddr').value.trim(), email:document.getElementById('cfgEmail').value.trim(), hours:document.getElementById('cfgHours').value.trim() };
+  const data = {
+    name:     document.getElementById('cfgName').value.trim(),
+    phone:    document.getElementById('cfgPhone').value.trim(),
+    addr:     document.getElementById('cfgAddr').value.trim(),
+    email:    document.getElementById('cfgEmail').value.trim(),
+    hours:    document.getElementById('cfgHours').value.trim(),
+    telegram: document.getElementById('cfgTelegram').value.trim().replace('@',''),
+  };
   try { await db.ref('settings').set(data); logAct('⚙️ Оновлено налаштування магазину','#9b59b6'); showToast('Збережено ✓','success'); }
   catch(e) { showToast('Помилка: '+e.message,'error'); }
 }

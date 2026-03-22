@@ -1,9 +1,10 @@
 {
     "version": 2,
     "rewrites": [
-      { "source": "/", "destination": "/public/index.html" },
+      { "source": "/",           "destination": "/public/index.html" },
       { "source": "/index.html", "destination": "/public/index.html" },
+      { "source": "/admin",      "destination": "/public/admin.html" },
       { "source": "/admin.html", "destination": "/public/admin.html" },
-      { "source": "/admin", "destination": "/public/admin.html" }
+      { "source": "/car/:slug",  "destination": "/public/car.html" }
     ]
   }
