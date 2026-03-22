@@ -545,19 +545,40 @@
 <script>
 'use strict';
 // ═══════════════════════════════════════════
-//  FIREBASE
+//  BOOTSTRAP — load config from Vercel env vars
+//  then initialise Firebase + app
 // ═══════════════════════════════════════════
-firebase.initializeApp({
-  apiKey:'AIzaSyBKARuWT--Pv4I-yp6lle9MYUFXmMic5Ko',
-  authDomain:'my-shop-trritonix.firebaseapp.com',
-  databaseURL:'https://my-shop-trritonix-default-rtdb.firebaseio.com',
-  projectId:'my-shop-trritonix',
-  storageBucket:'my-shop-trritonix.firebasestorage.app',
-  messagingSenderId:'444271119831',
-  appId:'1:444271119831:web:8b487a6bb336149cfbcf92'
-});
-const auth = firebase.auth();
-const db   = firebase.database();
+let R2_PUBLIC_BASE = '';
+
+async function bootstrap() {
+  // Fetch config injected by Vercel (env vars never hit the browser)
+  const res = await fetch('/api/config').catch(() => null);
+  if (!res || !res.ok) {
+    document.getElementById('loading').innerHTML =
+      '<div style="color:#ff4444;font-size:1rem">❌ Не вдалося завантажити конфіг.<br>Перевірте Environment Variables у Vercel.</div>';
+    return;
+  }
+  const cfg = await res.json();
+
+  // Set R2 public base URL
+  R2_PUBLIC_BASE = cfg.r2PublicBase || '';
+
+  // Initialise Firebase
+  firebase.initializeApp(cfg.firebase);
+  const authInst = firebase.auth();
+  const dbInst   = firebase.database();
+
+  // Make available globally (rest of the script uses these)
+  window._auth = authInst;
+  window._db   = dbInst;
+
+  // Hand off to main app
+  initApp(authInst, dbInst);
+}
+
+bootstrap();
+
+function initApp(auth, db) {
 
 // ═══════════════════════════════════════════
 //  STATE
@@ -1022,137 +1043,53 @@ function populateBrandFilter() {
 }
 
 // ═══════════════════════════════════════════
-//  CLOUDFLARE R2 CONFIG
+//  R2 — via Vercel API (no keys in browser)
+//  R2_PUBLIC_BASE is set in bootstrap() from /api/config
 // ═══════════════════════════════════════════
-const R2 = {
-  // S3 API endpoint — used only for upload/delete (presigned URLs)
-  endpoint:   'https://71d915a9f077d416a177b596ba394b1b.r2.cloudflarestorage.com',
-  bucket:     'autopark',
-  accessKey:  '335b21ee5d8f600eb72556e34ced2c59',
-  secretKey:  'e3347f44ad1e2e5ae3ab6c0fd3a48b2be3a6c75b74218b1b3a18a9bba16fb907',
-  region:     'auto',
-  // Public r2.dev URL — used for ALL image display (stored in DB, shown in <img>)
-  publicBase: 'https://pub-b38a2f7c180947eeb62db43b628b3a20.r2.dev',
-};
 
-// ── AWS Sig V4 primitives (Web Crypto API) ─
-async function sha256hex(data) {
-  const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : new Uint8Array(data);
-  const hash  = await crypto.subtle.digest('SHA-256', bytes);
-  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-async function hmacRaw(keyBytes, msg) {
-  const k = await crypto.subtle.importKey('raw', keyBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  return new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(msg)));
-}
-function toHex(u8) { return Array.from(u8).map(b => b.toString(16).padStart(2, '0')).join(''); }
-
-// ── Generate presigned PUT URL for upload ──
-// Signature in query string → upload goes to S3 endpoint
-// But the URL saved to DB uses the public r2.dev domain
-async function r2PresignPut(objectKey, expiresIn = 600) {
-  const now        = new Date();
-  const isoDate    = now.toISOString().replace(/[-:]|\.\d{3}/g, '').slice(0, 15) + 'Z';
-  const shortDate  = isoDate.slice(0, 8);
-  const host       = R2.endpoint.replace(/^https?:\/\//, '');
-  const path       = '/' + R2.bucket + '/' + objectKey;
-  const credScope  = `${shortDate}/${R2.region}/s3/aws4_request`;
-  const credential = `${R2.accessKey}/${credScope}`;
-
-  const qp = [
-    ['X-Amz-Algorithm',     'AWS4-HMAC-SHA256'],
-    ['X-Amz-Credential',    credential],
-    ['X-Amz-Date',          isoDate],
-    ['X-Amz-Expires',       String(expiresIn)],
-    ['X-Amz-SignedHeaders', 'host'],
-  ].sort(([a], [b]) => a.localeCompare(b));
-
-  const canonQuery   = qp.map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
-  const canonHeaders = `host:${host}\n`;
-  const canonReq     = ['PUT', path, canonQuery, canonHeaders, 'host', 'UNSIGNED-PAYLOAD'].join('\n');
-  const strToSign    = `AWS4-HMAC-SHA256\n${isoDate}\n${credScope}\n${await sha256hex(canonReq)}`;
-
-  const kDate    = await hmacRaw(new TextEncoder().encode('AWS4' + R2.secretKey), shortDate);
-  const kRegion  = await hmacRaw(kDate,    R2.region);
-  const kService = await hmacRaw(kRegion,  's3');
-  const kSigning = await hmacRaw(kService, 'aws4_request');
-  const sig      = toHex(await hmacRaw(kSigning, strToSign));
-
-  return `${R2.endpoint}/${R2.bucket}/${objectKey}?${canonQuery}&X-Amz-Signature=${sig}`;
-}
-
-// ── Generate presigned DELETE URL ──
-async function r2PresignDelete(objectKey, expiresIn = 600) {
-  const now        = new Date();
-  const isoDate    = now.toISOString().replace(/[-:]|\.\d{3}/g, '').slice(0, 15) + 'Z';
-  const shortDate  = isoDate.slice(0, 8);
-  const host       = R2.endpoint.replace(/^https?:\/\//, '');
-  const path       = '/' + R2.bucket + '/' + objectKey;
-  const credScope  = `${shortDate}/${R2.region}/s3/aws4_request`;
-  const credential = `${R2.accessKey}/${credScope}`;
-
-  const qp = [
-    ['X-Amz-Algorithm',     'AWS4-HMAC-SHA256'],
-    ['X-Amz-Credential',    credential],
-    ['X-Amz-Date',          isoDate],
-    ['X-Amz-Expires',       String(expiresIn)],
-    ['X-Amz-SignedHeaders', 'host'],
-  ].sort(([a], [b]) => a.localeCompare(b));
-
-  const canonQuery   = qp.map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
-  const canonHeaders = `host:${host}\n`;
-  const canonReq     = ['DELETE', path, canonQuery, canonHeaders, 'host', 'UNSIGNED-PAYLOAD'].join('\n');
-  const strToSign    = `AWS4-HMAC-SHA256\n${isoDate}\n${credScope}\n${await sha256hex(canonReq)}`;
-
-  const kDate    = await hmacRaw(new TextEncoder().encode('AWS4' + R2.secretKey), shortDate);
-  const kRegion  = await hmacRaw(kDate,    R2.region);
-  const kService = await hmacRaw(kRegion,  's3');
-  const kSigning = await hmacRaw(kService, 'aws4_request');
-  const sig      = toHex(await hmacRaw(kSigning, strToSign));
-
-  return `${R2.endpoint}/${R2.bucket}/${objectKey}?${canonQuery}&X-Amz-Signature=${sig}`;
-}
-
-// ── Upload file to R2 ──────────────────────
+// Upload: ask Vercel /api/upload-url for a presigned URL, then PUT to R2 directly
 async function uploadToR2(file) {
-  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
-  const key = 'cars/' + Date.now() + '_' + Math.random().toString(36).slice(2) + '.' + ext;
-  const buf = await file.arrayBuffer();
-
-  // Upload via presigned URL to S3 endpoint
-  const uploadUrl = await r2PresignPut(key);
-  const res = await fetch(uploadUrl, { method: 'PUT', body: buf });
-
-  if (!res.ok) {
-    const txt = await res.text().catch(() => String(res.status));
-    throw new Error(`Upload failed (${res.status}): ${txt}`);
+  const res1 = await fetch('/api/upload-url', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename: file.name }),
+  });
+  if (!res1.ok) {
+    const err = await res1.json().catch(() => ({}));
+    throw new Error('Помилка сервера: ' + (err.error || res1.status));
   }
+  const { uploadUrl, publicUrl, key } = await res1.json();
 
-  // IMPORTANT: save the public r2.dev URL, NOT the S3 endpoint URL
-  const publicUrl = `${R2.publicBase}/${key}`;
+  const buf  = await file.arrayBuffer();
+  const res2 = await fetch(uploadUrl, { method: 'PUT', body: buf });
+  if (!res2.ok) {
+    const txt = await res2.text().catch(() => String(res2.status));
+    throw new Error('R2 upload failed (' + res2.status + '): ' + txt);
+  }
   return { url: publicUrl, key };
 }
 
-// ── Delete file from R2 ───────────────────
+// Delete: ask Vercel /api/delete-file to sign and send DELETE to R2
 async function deleteFromR2(key) {
   if (!key) return;
   try {
-    const url = await r2PresignDelete(key);
-    await fetch(url, { method: 'DELETE' });
+    await fetch('/api/delete-file', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key }),
+    });
   } catch(e) { console.warn('R2 delete:', e.message); }
 }
 
-// ── Extract object key from public URL ───
-// Handles both r2.dev and S3 endpoint formats
+// Extract object key from a public r2.dev or S3 URL
 function r2KeyFromUrl(url) {
   if (!url) return null;
-  // r2.dev format: https://pub-xxx.r2.dev/cars/file.jpg
-  const devPrefix = R2.publicBase + '/';
-  if (url.startsWith(devPrefix)) return url.slice(devPrefix.length);
-  // S3 format: https://accountid.r2.cloudflarestorage.com/bucket/cars/file.jpg
-  const s3Prefix = R2.endpoint + '/' + R2.bucket + '/';
-  if (url.startsWith(s3Prefix)) return url.slice(s3Prefix.length);
-  return null;
+  if (R2_PUBLIC_BASE && url.startsWith(R2_PUBLIC_BASE + '/')) {
+    return url.slice(R2_PUBLIC_BASE.length + 1);
+  }
+  // Fallback: match any r2.dev or cloudflarestorage path
+  const m = url.match(/\.r2\.dev\/(.+)/) || url.match(/\.r2\.cloudflarestorage\.com\/[^/]+\/(.+)/);
+  return m ? m[1] : null;
 }
 
 // ═══════════════════════════════════════════
@@ -1500,6 +1437,8 @@ function showToast(msg, type='success') {
 }
 
 document.addEventListener('keydown', e => { if(e.key==='Escape'){closeDrawer();closeAdminDrawer();closeConfirm();} });
+
+} // end initApp
 </script>
 </body>
 </html>

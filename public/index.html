@@ -362,7 +362,7 @@
       <li><a id="footerPhone" href="tel:+380501234567">+38 (050) 123-45-67</a></li>
       <li><a id="footerAddr" href="#">м. Київ, вул. Авто 1</a></li>
       <li><a id="footerHours" href="#">Пн–Нд: 9:00–20:00</a></li>
-      <li><a id="footerEmail" href="mailto:info@autopark.ua">info@autopark.ua</a></li>
+      <li><a id="footerEmail" href="/cdn-cgi/l/email-protection#3b52555d547b5a4e4f544b5a4950154e5a"><span class="__cf_email__" data-cfemail="6d04030b022d0c1819021d0c1f0643180c">[email&#160;protected]</span></a></li>
     </ul>
   </div>
 </footer>
@@ -376,26 +376,27 @@
 <script>
 'use strict';
 
-// ── Firebase ──────────────────────────────
-firebase.initializeApp({
-  apiKey:'AIzaSyBKARuWT--Pv4I-yp6lle9MYUFXmMic5Ko',
-  authDomain:'my-shop-trritonix.firebaseapp.com',
-  databaseURL:'https://my-shop-trritonix-default-rtdb.firebaseio.com',
-  projectId:'my-shop-trritonix',
-  storageBucket:'my-shop-trritonix.firebasestorage.app',
-  messagingSenderId:'444271119831',
-  appId:'1:444271119831:web:8b487a6bb336149cfbcf92'
-});
-const db = firebase.database();
-
 // ── State ─────────────────────────────────
 let CARS = [];
 let favorites = new Set(JSON.parse(localStorage.getItem('ap_favs') || '[]'));
 let sliderPhotos = [], sliderIdx = 0;
 let currentCarKey = null;
+let db; // initialised after config loads
 
-// ── Settings listener ─────────────────────
-db.ref('settings').on('value', snap => {
+// ── Bootstrap: fetch config from Vercel, then start ──────────
+(async function bootstrap() {
+  const res = await fetch('/api/config').catch(() => null);
+  if (!res || !res.ok) {
+    const g = document.getElementById('carsGrid');
+    if (g) g.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:#ff4444">❌ Не вдалося завантажити конфіг.<br>Зверніться до адміністратора.</div>';
+    return;
+  }
+  const cfg = await res.json();
+  firebase.initializeApp(cfg.firebase);
+  db = firebase.database();
+
+  // ── Settings listener ─────────────────────
+  db.ref('settings').on('value', snap => {
   const s = snap.val() || {};
   const phone = (s.phone || '+380501234567').replace(/\s/g,'');
   document.querySelectorAll('a[href^="tel:"]').forEach(a => a.href = 'tel:' + phone);
@@ -618,10 +619,12 @@ function showToast(msg) {
   const t = document.getElementById('toast');
   t.innerHTML = msg;
   t.classList.add('show');
-  clearTimeout(t._t);
-  t._t = setTimeout(() => t.classList.remove('show'), 3200);
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3200);
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+})(); // end bootstrap
 </script>
 </body>
 </html>
