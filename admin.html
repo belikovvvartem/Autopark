@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>АВТОПАРК — Адмін</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#080810;--surface:#0f0f18;--card:#13131e;--card2:#171724;
+      --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.12);
+      --accent:#e8c84a;--adim:rgba(232,200,74,.12);
+      --red:#ff4444;--green:#2ecc71;--blue:#4a9eff;--orange:#ff8c42;
+      --text:#eeeaf0;--muted:#6b6880;--muted2:#9b97a8;
+      --font-display:'Bebas Neue',sans-serif;--font-body:'Manrope',sans-serif;
+      --sw:240px;
+    }
+    html{scroll-behavior:smooth}
+    body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh;overflow-x:hidden;display:flex}
+
+    /* LOADING */
+    #loading{position:fixed;inset:0;z-index:1000;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px}
+    .ld-logo{font-family:var(--font-display);font-size:2.5rem;letter-spacing:4px;color:var(--accent)}
+    .ld-logo span{color:var(--text)}
+    .ld-bar{width:180px;height:2px;background:var(--border2);overflow:hidden}
+    .ld-bar-fill{height:100%;background:var(--accent);animation:lbar 1.2s ease infinite}
+    @keyframes lbar{0%{width:0;margin-left:0}50%{width:60%;margin-left:20%}100%{width:0;margin-left:100%}}
+
+    /* LOGIN */
+    #loginScreen{position:fixed;inset:0;z-index:999;background:var(--bg);display:none;align-items:center;justify-content:center}
+    #loginScreen::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(232,200,74,.05),transparent 70%)}
+    .lbox{position:relative;width:400px;padding:48px 40px;background:var(--card);border:1px solid var(--border2);animation:fadeUp .6s ease}
+    .lbox-logo{font-family:var(--font-display);font-size:2.2rem;letter-spacing:4px;color:var(--accent);margin-bottom:4px}
+    .lbox-logo span{color:var(--text)}
+    .lbox-sub{font-size:.72rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:32px}
+    .lf{margin-bottom:16px}
+    .lf label{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:7px}
+    .lf input{width:100%;background:var(--surface);border:1px solid var(--border2);color:var(--text);padding:11px 14px;font-family:var(--font-body);font-size:.9rem;transition:border-color .2s}
+    .lf input:focus{outline:none;border-color:var(--accent)}
+    .lbtn{width:100%;background:var(--accent);color:#000;border:none;padding:13px;margin-top:8px;font-family:var(--font-body);font-weight:800;font-size:.88rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .2s}
+    .lbtn:hover:not(:disabled){background:#f5d55c;transform:translateY(-1px)}
+    .lbtn:disabled{opacity:.6;cursor:not-allowed}
+    .lerr{color:var(--red);font-size:.8rem;margin-top:10px;text-align:center;min-height:18px}
+
+    /* SIDEBAR */
+    .sidebar{width:var(--sw);min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50}
+    .sb-logo{padding:24px 22px 18px;border-bottom:1px solid var(--border)}
+    .sb-logo-text{font-family:var(--font-display);font-size:1.4rem;letter-spacing:3px;color:var(--accent)}
+    .sb-logo-text span{color:var(--text)}
+    .sb-role{font-size:.6rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-top:3px}
+    .sb-nav{flex:1;padding:16px 0;overflow-y:auto}
+    .sb-group{font-size:.58rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted);padding:0 22px;margin:14px 0 6px}
+    .ni{display:flex;align-items:center;gap:10px;padding:10px 22px;cursor:pointer;transition:all .15s;position:relative;font-size:.85rem;font-weight:500;color:var(--muted2);text-decoration:none;user-select:none}
+    .ni:hover{color:var(--text);background:rgba(255,255,255,.03)}
+    .ni.active{color:var(--accent);background:var(--adim)}
+    .ni.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+    .ni svg{flex-shrink:0;opacity:.7}
+    .ni.active svg{opacity:1}
+    .ni-badge{margin-left:auto;background:var(--accent);color:#000;font-size:.58rem;font-weight:800;padding:2px 6px;border-radius:8px;min-width:18px;text-align:center}
+    .ni.locked{opacity:.35;cursor:not-allowed;pointer-events:none}
+    .sb-footer{padding:16px 20px;border-top:1px solid var(--border)}
+    .sb-user{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+    .sb-avatar{width:32px;height:32px;background:var(--adim);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:var(--accent);flex-shrink:0;border-radius:50%}
+    .sb-name{font-size:.82rem;font-weight:600}
+    .sb-role2{font-size:.63rem;color:var(--muted);margin-top:1px}
+    .fb-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--muted);margin-right:3px;transition:all .4s}
+    .fb-dot.on{background:var(--green);box-shadow:0 0 5px var(--green)}
+    .fb-dot.off{background:var(--red)}
+    .logout-btn{width:100%;background:none;border:1px solid var(--border2);color:var(--muted);padding:7px;font-family:var(--font-body);font-size:.75rem;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s}
+    .logout-btn:hover{border-color:var(--red);color:var(--red)}
+
+    /* MAIN */
+    .main{margin-left:var(--sw);flex:1;min-height:100vh}
+    .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;height:62px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:40}
+    .tb-title{font-family:var(--font-display);font-size:1.5rem;letter-spacing:2px}
+    .tb-actions{display:flex;gap:10px;align-items:center}
+    .tb-search{background:var(--card);border:1px solid var(--border);color:var(--text);padding:7px 14px;font-family:var(--font-body);font-size:.83rem;width:200px;transition:border-color .2s}
+    .tb-search:focus{outline:none;border-color:var(--accent)}
+    .btn-add{background:var(--accent);color:#000;border:none;padding:8px 18px;font-family:var(--font-body);font-weight:700;font-size:.8rem;letter-spacing:1px;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;white-space:nowrap}
+    .btn-add:hover{background:#f5d55c;transform:translateY(-1px)}
+    .tb-link{color:var(--muted);font-size:.78rem;text-decoration:none;padding:7px 12px;border:1px solid var(--border);transition:all .2s;white-space:nowrap}
+    .tb-link:hover{color:var(--accent);border-color:var(--accent)}
+
+    /* PAGES */
+    .page{display:none;padding:28px 32px;animation:fadeUp .3s ease}
+    .page.active{display:block}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+    /* STATS */
+    .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:28px}
+    .sc{background:var(--card);border:1px solid var(--border);padding:20px;position:relative;overflow:hidden}
+    .sc::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px}
+    .sc-y::after{background:var(--accent)}.sc-g::after{background:var(--green)}.sc-b::after{background:var(--blue)}.sc-r::after{background:var(--red)}
+    .sc-icon{font-size:1.4rem;margin-bottom:10px;display:block}
+    .sc-val{font-family:var(--font-display);font-size:2.4rem;letter-spacing:2px;line-height:1;margin-bottom:3px}
+    .sc-y .sc-val{color:var(--accent)}.sc-g .sc-val{color:var(--green)}.sc-b .sc-val{color:var(--blue)}.sc-r .sc-val{color:var(--red)}
+    .sc-lbl{font-size:.68rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted)}
+
+    /* SECTION TITLE */
+    .sec-title{font-family:var(--font-display);font-size:1.7rem;letter-spacing:2px;margin-bottom:18px}
+    .sec-title span{color:var(--accent)}
+
+    /* TABLE */
+    .tw{background:var(--card);border:1px solid var(--border);overflow:hidden}
+    .tf{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+    .tfi{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 11px;font-family:var(--font-body);font-size:.8rem;transition:border-color .2s}
+    .tfi:focus{outline:none;border-color:var(--accent)}
+    select.tfi{appearance:none;cursor:pointer;min-width:110px}
+    table{width:100%;border-collapse:collapse}
+    thead tr{border-bottom:1px solid var(--border)}
+    th{padding:11px 14px;text-align:left;font-size:.62rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:600;white-space:nowrap}
+    td{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.04);font-size:.85rem;vertical-align:middle}
+    tr:last-child td{border-bottom:none}
+    tr:hover td{background:rgba(255,255,255,.02)}
+    .td-img{width:52px;height:38px;object-fit:cover;display:block;filter:brightness(.9)}
+    .td-brand{font-weight:700;font-size:.76rem;color:var(--accent)}
+    .td-model{font-weight:600}
+    .td-price{font-family:var(--font-display);font-size:1.05rem;color:var(--accent)}
+    .badge{display:inline-block;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:3px 8px}
+    .ba{background:rgba(46,204,113,.15);color:var(--green);border:1px solid rgba(46,204,113,.3)}
+    .br{background:rgba(232,200,74,.12);color:var(--accent);border:1px solid rgba(232,200,74,.3)}
+    .bs{background:rgba(107,104,128,.15);color:var(--muted2);border:1px solid rgba(107,104,128,.3)}
+    .td-acts{display:flex;gap:5px;flex-wrap:wrap}
+    .ab{background:none;border:1px solid var(--border);color:var(--muted2);padding:4px 9px;font-size:.72rem;cursor:pointer;transition:all .15s;white-space:nowrap;font-family:var(--font-body)}
+    .ab:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+    .ab.del:hover:not(:disabled){border-color:var(--red);color:var(--red)}
+    .ab.cyc:hover:not(:disabled){border-color:var(--blue);color:var(--blue)}
+    .ab:disabled{opacity:.3;cursor:not-allowed}
+    .no-rows{padding:36px;text-align:center;color:var(--muted);font-size:.88rem}
+    .skel{background:linear-gradient(90deg,var(--card) 25%,var(--card2) 50%,var(--card) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:2px;height:13px}
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+    /* DRAWER */
+    .dov{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .3s}
+    .dov.open{opacity:1;pointer-events:all}
+    .drawer{position:fixed;top:0;right:0;bottom:0;width:580px;max-width:96vw;background:var(--card);border-left:1px solid var(--border2);z-index:101;overflow-y:auto;transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1)}
+    .dov.open .drawer{transform:translateX(0)}
+    .dh{padding:24px 28px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:2}
+    .dh-title{font-family:var(--font-display);font-size:1.7rem;letter-spacing:2px}
+    .dh-title span{color:var(--accent)}
+    .dh-close{background:none;border:1px solid var(--border);color:var(--muted2);width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;transition:all .2s}
+    .dh-close:hover{border-color:var(--red);color:var(--red)}
+    .db{padding:24px 28px 36px}
+    .fs{margin-bottom:24px}
+    .fs-title{font-size:.62rem;text-transform:uppercase;letter-spacing:2px;color:var(--accent);margin-bottom:12px;padding-bottom:7px;border-bottom:1px solid var(--border)}
+    .fg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .fg.c1{grid-template-columns:1fr}
+    .fgroup{display:flex;flex-direction:column;gap:5px}
+    .fgroup label{font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted)}
+    .fgroup input,.fgroup select,.fgroup textarea{background:var(--surface);color:var(--text);border:1px solid var(--border2);padding:9px 12px;font-family:var(--font-body);font-size:.85rem;transition:border-color .2s;width:100%}
+    .fgroup input:focus,.fgroup select:focus,.fgroup textarea:focus{outline:none;border-color:var(--accent)}
+    .fgroup select{appearance:none;cursor:pointer}
+    .fgroup textarea{resize:vertical;min-height:80px}
+    .fgroup input.err,.fgroup select.err{border-color:var(--red)}
+    .df{padding:18px 28px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;position:sticky;bottom:0;background:var(--card)}
+    .btn-save{background:var(--accent);color:#000;border:none;padding:10px 26px;font-family:var(--font-body);font-weight:800;font-size:.85rem;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .2s}
+    .btn-save:hover:not(:disabled){background:#f5d55c;transform:translateY(-1px)}
+    .btn-save:disabled{opacity:.5;cursor:not-allowed}
+    .btn-cancel{background:none;color:var(--muted2);border:1px solid var(--border2);padding:10px 18px;font-family:var(--font-body);font-size:.85rem;cursor:pointer;transition:all .2s}
+    .btn-cancel:hover{color:var(--text);border-color:var(--muted2)}
+
+    /* PHOTO GRID */
+    .ph-thumb{position:relative;aspect-ratio:16/10;overflow:hidden;background:var(--surface);border:2px solid var(--border);cursor:pointer;transition:border-color .2s}
+    .ph-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+    .ph-thumb.cover{border-color:var(--accent)}
+    .ph-cov-badge{position:absolute;top:4px;left:4px;background:var(--accent);color:#000;font-size:.52rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:2px 6px}
+    .ph-del{position:absolute;top:4px;right:4px;background:rgba(255,68,68,.85);border:none;color:#fff;width:20px;height:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.75rem;opacity:0;transition:opacity .15s}
+    .ph-thumb:hover .ph-del{opacity:1}
+    .ph-set-cov{position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s;font-size:.68rem;color:#fff;font-weight:600;text-transform:uppercase;letter-spacing:1px}
+    .ph-thumb:not(.cover):hover .ph-set-cov{opacity:1}
+
+    /* CONFIRM */
+    .cov{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.82);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+    .cov.open{opacity:1;pointer-events:all}
+    .cbox{background:var(--card);border:1px solid var(--border2);padding:32px 28px;max-width:360px;width:90%;text-align:center;transform:scale(.92);transition:transform .25s}
+    .cov.open .cbox{transform:scale(1)}
+    .c-icon{font-size:2.2rem;margin-bottom:10px}
+    .c-title{font-family:var(--font-display);font-size:1.5rem;letter-spacing:2px;margin-bottom:7px}
+    .c-text{color:var(--muted2);font-size:.85rem;margin-bottom:24px;line-height:1.6}
+    .c-acts{display:flex;gap:10px;justify-content:center}
+    .btn-del{background:var(--red);color:#fff;border:none;padding:9px 22px;font-family:var(--font-body);font-weight:700;font-size:.85rem;cursor:pointer;transition:opacity .2s}
+    .btn-del:hover{opacity:.85}
+
+    /* TOAST */
+    .toast{position:fixed;bottom:26px;right:26px;z-index:300;background:var(--card2);border:1px solid var(--border2);color:var(--text);padding:12px 20px;font-size:.85rem;font-weight:500;min-width:200px;transform:translateY(80px);opacity:0;transition:all .35s cubic-bezier(.34,1.56,.64,1);pointer-events:none;display:flex;align-items:center;gap:9px}
+    .toast.show{transform:translateY(0);opacity:1}
+    .t-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+    .toast.success .t-dot{background:var(--green)}.toast.error .t-dot{background:var(--red)}.toast.info .t-dot{background:var(--blue)}
+
+    /* DASHBOARD */
+    .dash-grid{display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-top:24px}
+    .dash-title{font-family:var(--font-display);font-size:1.2rem;letter-spacing:2px;margin-bottom:12px}
+    .dash-title span{color:var(--accent)}
+    .act-item{display:flex;align-items:flex-start;gap:12px;padding:12px 18px;border-bottom:1px solid rgba(255,255,255,.04)}
+    .act-item:last-child{border-bottom:none}
+    .act-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:6px}
+    .act-msg{font-size:.84rem;line-height:1.4}
+    .act-meta{font-size:.7rem;color:var(--muted);margin-top:2px}
+    .act-admin{color:var(--accent);font-weight:600}
+    .act-filter{padding:10px 18px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center}
+    .bar-list{display:flex;flex-direction:column;gap:10px}
+    .bar-head{display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:4px}
+    .bar-head strong{color:var(--text)}.bar-head span{color:var(--muted)}
+    .bar-track{height:4px;background:var(--border);position:relative;overflow:hidden}
+    .bar-fill{position:absolute;top:0;left:0;bottom:0;background:var(--accent);transition:width 1s cubic-bezier(.4,0,.2,1)}
+
+    /* ADMINS */
+    .admins-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:2px}
+    .admin-card{background:var(--card);border:1px solid var(--border);padding:20px;position:relative}
+    .acard-av{width:44px;height:44px;border-radius:50%;background:var(--adim);border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.3rem;color:var(--accent);margin-bottom:12px}
+    .acard-name{font-weight:700;font-size:.95rem;margin-bottom:2px}
+    .acard-email{font-size:.75rem;color:var(--muted);margin-bottom:12px}
+    .role-tag{display:inline-block;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:2px 8px;margin-bottom:14px}
+    .rt-super{background:rgba(232,200,74,.15);color:var(--accent);border:1px solid rgba(232,200,74,.3)}
+    .rt-admin{background:rgba(74,158,255,.12);color:var(--blue);border:1px solid rgba(74,158,255,.3)}
+    .perm-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+    .perm-row{display:flex;align-items:center;justify-content:space-between;font-size:.78rem}
+    .perm-lbl{color:var(--muted2)}
+    .ptog{position:relative;width:34px;height:18px;cursor:pointer;flex-shrink:0}
+    .ptog input{opacity:0;width:0;height:0}
+    .pslider{position:absolute;inset:0;background:var(--border2);border-radius:9px;transition:.3s}
+    .pslider::before{content:'';position:absolute;width:12px;height:12px;left:3px;top:3px;background:var(--muted);border-radius:50%;transition:.3s}
+    .ptog input:checked+.pslider{background:var(--accent)}
+    .ptog input:checked+.pslider::before{transform:translateX(16px);background:#000}
+    .ptog input:disabled+.pslider{opacity:.4;cursor:not-allowed}
+    .acard-acts{display:flex;gap:6px}
+    .self-badge{position:absolute;top:12px;right:12px;font-size:.58rem;text-transform:uppercase;letter-spacing:1px;color:var(--green);border:1px solid var(--green);padding:2px 6px}
+
+    /* SETTINGS */
+    .set-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+    .set-card{background:var(--card);border:1px solid var(--border);padding:24px}
+    .set-title{font-size:.65rem;text-transform:uppercase;letter-spacing:2px;color:var(--accent);margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+    .set-field{margin-bottom:14px}
+    .set-field label{display:block;font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:6px}
+    .set-field input{width:100%;background:var(--surface);border:1px solid var(--border2);color:var(--text);padding:9px 12px;font-family:var(--font-body);font-size:.85rem;transition:border-color .2s}
+    .set-field input:focus{outline:none;border-color:var(--accent)}
+
+    @media(max-width:900px){
+      :root{--sw:0px}
+      .sidebar{display:none}.main{margin-left:0}
+      .stats-row{grid-template-columns:1fr 1fr}
+      .dash-grid{grid-template-columns:1fr}
+      .drawer{width:100%}
+      .fg{grid-template-columns:1fr}
+      .set-grid{grid-template-columns:1fr}
+      .topbar{padding:0 16px}
+      .tb-search{width:130px}
+    }
+  </style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="ld-logo">АВТО<span>ПАРК</span></div>
+  <div class="ld-bar"><div class="ld-bar-fill"></div></div>
+</div>
+
+<div id="loginScreen">
+  <div class="lbox">
+    <div class="lbox-logo">АВТО<span>ПАРК</span></div>
+    <div class="lbox-sub">Адміністративна панель</div>
+    <div class="lf"><label>Email</label><input type="email" id="lEmail" placeholder="admin@autopark.ua" autocomplete="email"/></div>
+    <div class="lf"><label>Пароль</label><input type="password" id="lPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+    <button class="lbtn" id="lBtn" onclick="doLogin()">Увійти</button>
+    <div class="lerr" id="lErr"></div>
+  </div>
+</div>
+
+<aside class="sidebar" id="sidebar" style="display:none">
+  <div class="sb-logo">
+    <div class="sb-logo-text">АВТО<span>ПАРК</span></div>
+    <div class="sb-role">Адмін панель</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-group">Головне</div>
+    <div class="ni active" id="nav-dashboard" onclick="showPage('dashboard',this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Дашборд
+    </div>
+    <div class="sb-group">Каталог</div>
+    <div class="ni" id="nav-cars" onclick="showPage('cars',this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect x="9" y="11" width="14" height="10" rx="1"/><circle cx="12" cy="21" r="1"/><circle cx="20" cy="21" r="1"/></svg>
+      Автомобілі
+      <span class="ni-badge" id="carsBadge">—</span>
+    </div>
+    <div class="sb-group">Система</div>
+    <div class="ni" id="nav-admins" onclick="showPage('admins',this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Адміністратори
+    </div>
+    <div class="ni" id="nav-settings" onclick="showPage('settings',this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Налаштування
+    </div>
+    <div class="ni" onclick="window.open('index.html','_blank')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      Сайт клієнта
+    </div>
+  </nav>
+  <div class="sb-footer">
+    <div class="sb-user">
+      <div class="sb-avatar" id="sbAvatar">?</div>
+      <div>
+        <div class="sb-name" id="sbName">—</div>
+        <div class="sb-role2"><span class="fb-dot" id="fbDot"></span><span id="fbTxt">Firebase</span></div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">Вийти</button>
+  </div>
+</aside>
+
+<main class="main" id="mainArea" style="display:none">
+  <div class="topbar">
+    <div class="tb-title" id="tbTitle">ДАШБОРД</div>
+    <div class="tb-actions">
+      <input class="tb-search" type="text" placeholder="🔍 Пошук…" oninput="tableSearch(this.value)"/>
+      <button class="btn-add" id="btnAdd" onclick="openDrawer()">+ Авто</button>
+      <a class="tb-link" href="index.html" target="_blank">← Сайт</a>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="stats-row">
+      <div class="sc sc-y"><span class="sc-icon">🚗</span><div class="sc-val" id="s-total">—</div><div class="sc-lbl">Всього авто</div></div>
+      <div class="sc sc-g"><span class="sc-icon">✅</span><div class="sc-val" id="s-avail">—</div><div class="sc-lbl">В наявності</div></div>
+      <div class="sc sc-b"><span class="sc-icon">🔒</span><div class="sc-val" id="s-res">—</div><div class="sc-lbl">Зарезервовано</div></div>
+      <div class="sc sc-r"><span class="sc-icon">💰</span><div class="sc-val" id="s-val">—</div><div class="sc-lbl">Вартість каталогу</div></div>
+    </div>
+    <div class="dash-grid">
+      <div>
+        <div class="dash-title">Останні <span>дії</span></div>
+        <div class="tw">
+          <div class="act-filter">
+            <select class="tfi" id="actFilter" onchange="renderActivity()" style="min-width:150px">
+              <option value="">Усі адміністратори</option>
+            </select>
+            <button class="ab" onclick="document.getElementById('actFilter').value='';renderActivity()">✕</button>
+          </div>
+          <div id="actList"><div class="no-rows">Завантаження…</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="dash-title">По <span>марках</span></div>
+        <div class="bar-list" id="brandBars"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CARS -->
+  <div class="page" id="page-cars">
+    <div class="sec-title">Каталог <span>авто</span></div>
+    <div class="tw">
+      <div class="tf">
+        <input class="tfi" type="text" placeholder="🔍 Назва / марка…" oninput="tableSearch(this.value)" style="min-width:170px"/>
+        <select class="tfi" id="tBrand" onchange="renderTable()"><option value="">Всі марки</option></select>
+        <select class="tfi" id="tStatus" onchange="renderTable()">
+          <option value="">Всі статуси</option>
+          <option value="available">В наявності</option>
+          <option value="reserved">Зарезервовано</option>
+          <option value="sold">Продано</option>
+        </select>
+        <select class="tfi" id="tSort" onchange="renderTable()">
+          <option value="new">Новіші</option>
+          <option value="pa">Ціна ↑</option>
+          <option value="pd">Ціна ↓</option>
+          <option value="yd">Рік ↓</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th></th><th>Марка / Модель</th><th>Рік</th><th>Ціна</th><th>Тип</th><th>Двигун</th><th>Пробіг</th><th>Статус</th><th>Дії</th></tr></thead>
+          <tbody id="tBody">
+            <tr><td colspan="9"><div style="padding:20px"><div class="skel" style="height:14px;width:70%;margin-bottom:10px"></div><div class="skel" style="height:14px;width:50%"></div></div></td></tr>
+          </tbody>
+        </table>
+        <div class="no-rows" id="noRows" style="display:none">Нічого не знайдено</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMINS -->
+  <div class="page" id="page-admins">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+      <div class="sec-title" style="margin-bottom:0">Адміністра<span>тори</span></div>
+      <button class="btn-add" onclick="openAdminDrawer()">+ Адмін</button>
+    </div>
+    <div class="admins-grid" id="adminsGrid"><div class="no-rows">Завантаження…</div></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="page" id="page-settings">
+    <div class="sec-title" style="margin-bottom:20px">Налашту<span>вання</span></div>
+    <div class="set-grid">
+      <div class="set-card">
+        <div class="set-title">Інформація магазину</div>
+        <div class="set-field"><label>Назва магазину</label><input type="text" id="cfgName" placeholder="АВТОПАРК"/></div>
+        <div class="set-field"><label>Телефон (для дзвінків)</label><input type="tel" id="cfgPhone" placeholder="+380501234567"/></div>
+        <div class="set-field"><label>Адреса</label><input type="text" id="cfgAddr" placeholder="м. Київ, вул. Авто 1"/></div>
+        <div class="set-field"><label>Email</label><input type="email" id="cfgEmail" placeholder="info@autopark.ua"/></div>
+        <div class="set-field"><label>Графік роботи</label><input type="text" id="cfgHours" placeholder="Пн–Нд: 9:00–20:00"/></div>
+        <button class="btn-save" onclick="saveSettings()">💾 Зберегти</button>
+      </div>
+      <div class="set-card">
+        <div class="set-title">Firebase</div>
+        <div style="background:var(--surface);padding:14px;border:1px solid var(--border);margin-bottom:20px;font-size:.8rem;color:var(--muted2);line-height:1.9">
+          <b style="color:var(--accent)">Project:</b> my-shop-trritonix<br>
+          <b style="color:var(--accent)">Auth:</b> Email/Password<br>
+          <b style="color:var(--accent)">Статус:</b> <span id="cfgFb">перевірка…</span>
+        </div>
+        <div class="set-title">Ваш профіль</div>
+        <div class="set-field"><label>Відображуване ім'я</label><input type="text" id="cfgDname" placeholder="Ваше ім'я"/></div>
+        <div class="set-field"><label>Новий пароль</label><input type="password" id="cfgNpass" placeholder="мін. 6 символів"/></div>
+        <button class="btn-save" onclick="updateMyProfile()">Оновити профіль</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- CAR DRAWER -->
+<div class="dov" id="dov" onclick="closeDovBg(event,'dov','closeDrawer')">
+  <div class="drawer">
+    <div class="dh"><div class="dh-title" id="dTitle">Нове <span>авто</span></div><button class="dh-close" onclick="closeDrawer()">✕</button></div>
+    <div class="db">
+      <div class="fs">
+        <div class="fs-title">Основна інформація</div>
+        <div class="fg">
+          <div class="fgroup"><label>Марка *</label>
+            <select id="fBrand"><option value="">— Оберіть —</option>
+              <option>BMW</option><option>Mercedes</option><option>Audi</option><option>Toyota</option>
+              <option>Volkswagen</option><option>Porsche</option><option>Lexus</option>
+              <option>Land Rover</option><option>Volvo</option><option>Skoda</option>
+              <option>Honda</option><option>Mazda</option><option>Ford</option>
+              <option>Hyundai</option><option>Kia</option>
+            </select></div>
+          <div class="fgroup"><label>Модель *</label><input type="text" id="fModel" placeholder="напр. 5 Series 530d"/></div>
+          <div class="fgroup"><label>Рік *</label><input type="number" id="fYear" min="1990" max="2026" placeholder="2023"/></div>
+          <div class="fgroup"><label>Ціна (USD) *</label><input type="number" id="fPrice" min="0" placeholder="35000"/></div>
+          <div class="fgroup"><label>Тип кузова</label>
+            <select id="fType"><option>Седан</option><option>SUV</option><option>Купе</option><option>Хетчбек</option><option>Універсал</option><option>Кабріолет</option><option>Пікап</option></select></div>
+          <div class="fgroup"><label>Колір</label><input type="text" id="fColor" placeholder="Чорний"/></div>
+        </div>
+      </div>
+      <div class="fs">
+        <div class="fs-title">Характеристики</div>
+        <div class="fg">
+          <div class="fgroup"><label>Двигун</label><input type="text" id="fEngine" placeholder="3.0 дизель"/></div>
+          <div class="fgroup"><label>Потужність</label><input type="text" id="fPower" placeholder="286 к.с."/></div>
+          <div class="fgroup"><label>Пробіг</label><input type="text" id="fMileage" placeholder="28 000 км"/></div>
+          <div class="fgroup"><label>Коробка</label>
+            <select id="fGearbox"><option>Автомат</option><option>Механіка</option><option>Варіатор</option><option>Робот</option></select></div>
+          <div class="fgroup"><label>Привід</label>
+            <select id="fDrive"><option>Повний</option><option>Передній</option><option>Задній</option></select></div>
+          <div class="fgroup"><label>Статус</label>
+            <select id="fStatus"><option value="available">В наявності</option><option value="reserved">Зарезервовано</option><option value="sold">Продано</option></select></div>
+        </div>
+      </div>
+      <div class="fs">
+        <div class="fs-title">Фото <span style="font-size:.58rem;color:var(--muted);text-transform:none;letter-spacing:0">(завантаження на Cloudflare R2)</span></div>
+
+        <!-- Drop zone -->
+        <div id="dropZone" style="border:2px dashed var(--border2);padding:24px 16px;text-align:center;cursor:pointer;transition:border-color .2s;margin-bottom:10px;position:relative"
+          onclick="document.getElementById('fileInput').click()"
+          ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+          ondragleave="this.style.borderColor='var(--border2)'"
+          ondrop="event.preventDefault();this.style.borderColor='var(--border2)';handleFiles(event.dataTransfer.files)">
+          <input type="file" id="fileInput" accept="image/*" multiple style="display:none" onchange="handleFiles(this.files)"/>
+          <div style="font-size:1.6rem;margin-bottom:6px">📁</div>
+          <div style="font-size:.82rem;color:var(--muted2);font-weight:600">Перетягніть фото або натисніть</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:4px">JPG, PNG, WEBP — до 10 МБ кожне</div>
+        </div>
+
+        <!-- Upload progress -->
+        <div id="uploadProgress" style="display:none;margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted2);margin-bottom:5px">
+            <span id="uploadLabel">Завантаження…</span>
+            <span id="uploadPct">0%</span>
+          </div>
+          <div style="height:3px;background:var(--border2);border-radius:2px;overflow:hidden">
+            <div id="uploadBar" style="height:100%;background:var(--accent);width:0%;transition:width .2s"></div>
+          </div>
+        </div>
+
+        <div id="photosGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px"></div>
+        <div id="photosEmpty" style="color:var(--muted);font-size:.78rem;text-align:center;padding:14px;border:1px dashed var(--border2)">Фото ще не додані</div>
+      </div>
+      <div class="fs">
+        <div class="fs-title">Опис</div>
+        <div class="fgroup"><textarea id="fDesc" placeholder="Деталі комплектації, стану…"></textarea></div>
+      </div>
+    </div>
+    <div class="df">
+      <button class="btn-cancel" onclick="closeDrawer()">Скасувати</button>
+      <button class="btn-save" id="btnSave" onclick="saveCar()">💾 Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN DRAWER -->
+<div class="dov" id="adov" onclick="closeDovBg(event,'adov','closeAdminDrawer')">
+  <div class="drawer">
+    <div class="dh"><div class="dh-title">Новий <span>адмін</span></div><button class="dh-close" onclick="closeAdminDrawer()">✕</button></div>
+    <div class="db">
+      <div class="fs">
+        <div class="fs-title">Обліковий запис</div>
+        <div class="fg">
+          <div class="fgroup"><label>Ім'я *</label><input type="text" id="aName" placeholder="Іван Петренко"/></div>
+          <div class="fgroup"><label>Email *</label><input type="email" id="aEmail" placeholder="admin@autopark.ua"/></div>
+          <div class="fgroup"><label>Пароль *</label><input type="password" id="aPass" placeholder="мін. 6 символів"/></div>
+          <div class="fgroup"><label>Роль</label>
+            <select id="aRole"><option value="admin">Адміністратор</option><option value="superadmin">Супер-адмін</option></select></div>
+        </div>
+      </div>
+      <div class="fs">
+        <div class="fs-title">Дозволи</div>
+        <div id="aPerms" style="display:flex;flex-direction:column;gap:12px"></div>
+      </div>
+    </div>
+    <div class="df">
+      <button class="btn-cancel" onclick="closeAdminDrawer()">Скасувати</button>
+      <button class="btn-save" id="btnAdminSave" onclick="saveAdmin()">💾 Створити</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="cov" id="confirmOv">
+  <div class="cbox">
+    <div class="c-icon">🗑️</div>
+    <div class="c-title">Видалити?</div>
+    <div class="c-text" id="cText">Цю дію неможливо скасувати.</div>
+    <div class="c-acts">
+      <button class="btn-cancel" onclick="closeConfirm()">Скасувати</button>
+      <button class="btn-del" onclick="confirmDelete()">Видалити</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><div class="t-dot"></div><span id="toastMsg"></span></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script>
+'use strict';
+// ═══════════════════════════════════════════
+//  FIREBASE
+// ═══════════════════════════════════════════
+firebase.initializeApp({
+  apiKey:'AIzaSyBKARuWT--Pv4I-yp6lle9MYUFXmMic5Ko',
+  authDomain:'my-shop-trritonix.firebaseapp.com',
+  databaseURL:'https://my-shop-trritonix-default-rtdb.firebaseio.com',
+  projectId:'my-shop-trritonix',
+  storageBucket:'my-shop-trritonix.firebasestorage.app',
+  messagingSenderId:'444271119831',
+  appId:'1:444271119831:web:8b487a6bb336149cfbcf92'
+});
+const auth = firebase.auth();
+const db   = firebase.database();
+
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
+let CARS = [], ACTIVITY = [], ADMINS = {}, SETTINGS = {};
+let currentUser = null, currentAdmin = null;
+let editKey = null, delKey = null, delType = 'car', delAdminUid = null;
+let searchQ = '', photoUrls = [], coverIdx = 0;
+let _listeners = [];  // { ref, type } for cleanup
+
+const PERM_DEFS = [
+  {key:'canAdd',      label:'Додавати авто'},
+  {key:'canEdit',     label:'Редагувати авто'},
+  {key:'canDelete',   label:'Видаляти авто'},
+  {key:'canStatus',   label:'Змінювати статус'},
+  {key:'canSettings', label:'Налаштування'},
+  {key:'canAdmins',   label:'Управління адмінами'},
+];
+
+// ═══════════════════════════════════════════
+//  CONNECTION
+// ═══════════════════════════════════════════
+db.ref('.info/connected').on('value', snap => {
+  const ok = !!snap.val();
+  document.querySelectorAll('.fb-dot').forEach(d => d.className = 'fb-dot ' + (ok ? 'on' : 'off'));
+  const t = document.getElementById('fbTxt'); if (t) t.textContent = ok ? 'Firebase ●' : 'Офлайн ✕';
+  const c = document.getElementById('cfgFb'); if (c) c.innerHTML = ok
+    ? '<span style="color:var(--green)">🟢 Підключено</span>'
+    : '<span style="color:var(--red)">🔴 Немає зʼєднання</span>';
+});
+
+// ═══════════════════════════════════════════
+//  AUTH — persistent via Firebase
+// ═══════════════════════════════════════════
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+auth.onAuthStateChanged(async user => {
+  document.getElementById('loading').style.display = 'none';
+  if (user) {
+    currentUser = user;
+    await initAdminData(user.uid);
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('sidebar').style.display = 'flex';
+    document.getElementById('mainArea').style.display = 'block';
+    startListeners();
+  } else {
+    currentUser = null; currentAdmin = null;
+    stopListeners();
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('sidebar').style.display = 'none';
+    document.getElementById('mainArea').style.display = 'none';
+  }
+});
+
+// Personal admin ref — managed separately so stopListeners() never kills it
+let _myAdminRef = null;
+
+async function initAdminData(uid) {
+  // Load once first
+  let snap = await db.ref('admins/' + uid).once('value').catch(() => null);
+  if (snap && snap.val()) {
+    currentAdmin = snap.val();
+  } else {
+    // First user → superadmin
+    const def = { name: currentUser.displayName || currentUser.email.split('@')[0], email: currentUser.email, role: 'superadmin', perms: allPerms() };
+    await db.ref('admins/' + uid).set(def).catch(() => {});
+    currentAdmin = def;
+  }
+  updateSidebarUser();
+  applyPerms();
+
+  // Detach any previous personal listener before attaching a new one
+  if (_myAdminRef) { _myAdminRef.off('value'); _myAdminRef = null; }
+
+  // Subscribe for realtime permission changes — stored separately, never touched by stopListeners()
+  _myAdminRef = db.ref('admins/' + uid);
+  _myAdminRef.on('value', function(snap) {
+    if (!snap.val() || !currentUser) return;
+    const updated = snap.val();
+    const prevPerms = JSON.stringify(currentAdmin?.perms || {});
+    const prevRole  = currentAdmin?.role || '';
+    currentAdmin = updated;
+    const newPerms = JSON.stringify(updated.perms || {});
+    const newRole  = updated.role || '';
+    // Always re-apply perms and re-render table when anything changes
+    if (prevPerms !== newPerms || prevRole !== newRole) {
+      applyPerms();
+      renderTable();
+      showToast('⚠️ Ваші права змінено', 'info');
+      // Redirect off locked page immediately — use navTo (no DB re-check)
+      const pg = document.querySelector('.page.active')?.id;
+      if (pg === 'page-settings' && !hasPerm('canSettings')) navTo('dashboard');
+      if (pg === 'page-admins'   && !hasPerm('canAdmins'))   navTo('dashboard');
+    }
+    updateSidebarUser();
+  });
+}
+
+function allPerms() { const p = {}; PERM_DEFS.forEach(d => p[d.key] = true); return p; }
+
+function hasPerm(key) {
+  if (!currentAdmin) return false;
+  if (currentAdmin.role === 'superadmin') return true;
+  return currentAdmin.perms?.[key] === true;
+}
+
+// ─── PERMISSION CHECK ────────────────────────────────────────────────────────
+// Always reads fresh from Firebase — never trusts cached currentAdmin.
+// Every action calls this before doing anything.
+async function verifyPerm(key) {
+  if (!currentUser) { showToast('⛔ Не авторизовано', 'error'); return false; }
+  try {
+    const snap = await db.ref('admins/' + currentUser.uid).once('value');
+    const data = snap.val();
+    if (!data) { showToast('⛔ Запис адміна не знайдено', 'error'); return false; }
+    // Sync local cache so UI also updates
+    currentAdmin = data;
+    applyPerms();
+    // Superadmin always passes
+    if (data.role === 'superadmin') return true;
+    // Check specific permission
+    if (data.perms && data.perms[key] === true) return true;
+    showToast('⛔ Немає доступу: ' + (PERM_DEFS.find(p => p.key === key)?.label || key), 'error');
+    return false;
+  } catch (e) {
+    showToast('⛔ Помилка перевірки прав: ' + e.message, 'error');
+    return false;
+  }
+}
+
+function applyPerms() {
+  // nav locks
+  document.getElementById('nav-settings')?.classList.toggle('locked', !hasPerm('canSettings'));
+  document.getElementById('nav-admins')?.classList.toggle('locked',   !hasPerm('canAdmins'));
+  // add button
+  const b = document.getElementById('btnAdd');
+  if (b) b.style.display = hasPerm('canAdd') ? '' : 'none';
+}
+
+function updateSidebarUser() {
+  const name = currentAdmin?.name || currentUser?.email || '?';
+  const el1 = document.getElementById('sbName');   if (el1) el1.textContent = name;
+  const el2 = document.getElementById('sbAvatar'); if (el2) el2.textContent = name.charAt(0).toUpperCase();
+}
+
+function doLogin() {
+  const email = document.getElementById('lEmail').value.trim();
+  const pass  = document.getElementById('lPass').value;
+  const btn   = document.getElementById('lBtn');
+  const err   = document.getElementById('lErr');
+  err.textContent = '';
+  if (!email || !pass) { err.textContent = 'Введіть пошту та пароль'; return; }
+  btn.disabled = true; btn.textContent = '⏳ Вхід…';
+  auth.signInWithEmailAndPassword(email, pass)
+    .catch(e => {
+      err.textContent = ['auth/wrong-password','auth/user-not-found','auth/invalid-credential'].includes(e.code)
+        ? 'Невірна пошта або пароль' : e.message;
+    })
+    .finally(() => { btn.disabled = false; btn.textContent = 'Увійти'; });
+}
+
+function doLogout() { auth.signOut(); }
+
+// ═══════════════════════════════════════════
+//  LISTENERS
+// ═══════════════════════════════════════════
+function on(refPath, cb) {
+  const ref = db.ref(refPath);
+  ref.on('value', cb, err => console.warn(refPath, err.message));
+  _listeners.push({ ref, type: 'value' });
+}
+
+function startListeners() {
+  stopListeners();
+
+  // CARS — build array fresh on every update
+  const carsRef = db.ref('cars');
+  carsRef.on('value', function(snap) {
+    CARS = [];
+    snap.forEach(function(child) {
+      var car = child.val();
+      car._key = child.key;
+      CARS.push(car);
+    });
+    CARS.sort(function(a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+    renderTable();
+    updateBadge();
+    populateBrandFilter();
+    updateStats();
+  });
+  _listeners.push({ ref: carsRef });
+
+  // ACTIVITY
+  const actRef = db.ref('activity');
+  actRef.on('value', function(snap) {
+    ACTIVITY = [];
+    snap.forEach(function(child) {
+      var a = child.val();
+      a._key = child.key;
+      ACTIVITY.push(a);
+    });
+    ACTIVITY.sort(function(a, b) { return (b.ts || 0) - (a.ts || 0); });
+    ACTIVITY = ACTIVITY.slice(0, 60);
+    renderActivity();
+    populateActFilter();
+  });
+  _listeners.push({ ref: actRef });
+
+  // ADMINS
+  const adminsRef = db.ref('admins');
+  adminsRef.on('value', function(snap) {
+    ADMINS = snap.val() || {};
+    renderAdmins();
+    populateActFilter();
+  });
+  _listeners.push({ ref: adminsRef });
+
+  // SETTINGS
+  const settingsRef = db.ref('settings');
+  settingsRef.on('value', function(snap) {
+    SETTINGS = snap.val() || {};
+    loadSettingsForm();
+  });
+  _listeners.push({ ref: settingsRef });
+}
+
+function stopListeners() {
+  _listeners.forEach(({ ref }) => ref.off());
+  _listeners = [];
+  // Also detach personal admin listener on logout
+  if (_myAdminRef) { _myAdminRef.off('value'); _myAdminRef = null; }
+}
+
+// ═══════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════
+async function showPage(id, el) {
+  // Verify from DB for protected pages
+  if (id === 'settings') { if (!(await verifyPerm('canSettings'))) return; }
+  if (id === 'admins')   { if (!(await verifyPerm('canAdmins')))   return; }
+
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+  const titles = {dashboard:'ДАШБОРД', cars:'КАТАЛОГ АВТ', admins:'АДМІНІСТРАТОРИ', settings:'НАЛАШТУВАННЯ'};
+  document.getElementById('tbTitle').textContent = titles[id] || '';
+  if (id === 'dashboard') { updateStats(); renderActivity(); }
+}
+
+// Internal redirect — skips DB permission check (used by the perm watcher)
+function navTo(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
+  const page = document.getElementById('page-' + id);
+  const nav  = document.getElementById('nav-' + id);
+  if (page) page.classList.add('active');
+  if (nav)  nav.classList.add('active');
+  const titles = {dashboard:'ДАШБОРД', cars:'КАТАЛОГ АВТ', admins:'АДМІНІСТРАТОРИ', settings:'НАЛАШТУВАННЯ'};
+  document.getElementById('tbTitle').textContent = titles[id] || '';
+  if (id === 'dashboard') { updateStats(); renderActivity(); }
+}
+function updateStats() {
+  document.getElementById('s-total').textContent = CARS.length;
+  document.getElementById('s-avail').textContent = CARS.filter(c => c.status === 'available').length;
+  document.getElementById('s-res').textContent   = CARS.filter(c => c.status === 'reserved').length;
+  const val = CARS.reduce((s, c) => s + (Number(c.price) || 0), 0);
+  document.getElementById('s-val').textContent   = '$' + (val / 1000).toFixed(0) + 'k';
+
+  const brands = {};
+  CARS.forEach(c => c.brand && (brands[c.brand] = (brands[c.brand] || 0) + 1));
+  const sorted = Object.entries(brands).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const max = sorted[0]?.[1] || 1;
+  document.getElementById('brandBars').innerHTML = sorted.map(([b, n]) =>
+    `<div><div class="bar-head"><strong>${b}</strong><span>${n}</span></div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/max*100)}%"></div></div></div>`
+  ).join('') || '<div style="color:var(--muted);font-size:.8rem;text-align:center">Немає даних</div>';
+}
+
+function populateActFilter() {
+  const sel = document.getElementById('actFilter');
+  if (!sel) return;
+  const cur = sel.value;
+  const names = [...new Set(ACTIVITY.map(a => a.adminName).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">Усі адміністратори</option>' +
+    names.map(n => `<option${n === cur ? ' selected' : ''}>${n}</option>`).join('');
+}
+
+function renderActivity() {
+  const list   = document.getElementById('actList');
+  const filter = document.getElementById('actFilter')?.value || '';
+  const items  = filter ? ACTIVITY.filter(a => a.adminName === filter) : ACTIVITY;
+  if (!items.length) { list.innerHTML = '<div class="no-rows">Поки що немає дій</div>'; return; }
+  list.innerHTML = items.slice(0, 15).map(a => `
+    <div class="act-item">
+      <div class="act-dot" style="background:${a.color || '#888'}"></div>
+      <div style="flex:1">
+        <div class="act-msg">${a.msg}</div>
+        <div class="act-meta"><span class="act-admin">${a.adminName || '?'}</span> · <span>${a.timeLabel || ''}</span></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════
+//  TABLE
+// ═══════════════════════════════════════════
+function tableSearch(v) { searchQ = v.toLowerCase(); renderTable(); }
+
+function renderTable() {
+  var brand  = (document.getElementById('tBrand')  || {}).value || '';
+  var status = (document.getElementById('tStatus') || {}).value || '';
+  var sort   = (document.getElementById('tSort')   || {}).value || 'new';
+
+  var list = CARS.filter(function(c) {
+    if (brand  && c.brand  !== brand)  return false;
+    if (status && c.status !== status) return false;
+    if (searchQ) {
+      var b = (c.brand  || '').toLowerCase();
+      var m = (c.model  || '').toLowerCase();
+      if (b.indexOf(searchQ) === -1 && m.indexOf(searchQ) === -1) return false;
+    }
+    return true;
+  });
+
+  if (sort === 'pa') list.sort(function(a,b){ return a.price - b.price; });
+  if (sort === 'pd') list.sort(function(a,b){ return b.price - a.price; });
+  if (sort === 'yd') list.sort(function(a,b){ return b.year  - a.year;  });
+
+  var tbody  = document.getElementById('tBody');
+  var noRows = document.getElementById('noRows');
+  if (!tbody) return;
+
+  // Clear existing rows
+  while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+
+  if (list.length === 0) {
+    noRows.style.display = 'block';
+    return;
+  }
+  noRows.style.display = 'none';
+
+  var badges = { available:'В наявності', reserved:'Зарезервовано', sold:'Продано' };
+  var badgeCls = { available:'badge ba', reserved:'badge br', sold:'badge bs' };
+  var cE = hasPerm('canEdit'), cD = hasPerm('canDelete'), cS = hasPerm('canStatus');
+
+  for (var i = 0; i < list.length; i++) {
+    var c = list[i];
+    var tr = document.createElement('tr');
+
+    // Image cell
+    var tdImg = document.createElement('td');
+    var img = document.createElement('img');
+    img.className = 'td-img';
+    img.src = c.img || '';
+    img.alt = '';
+    img.onerror = function(){ this.src = 'https://placehold.co/52x38/13131e/555?text=car'; };
+    tdImg.appendChild(img);
+    tr.appendChild(tdImg);
+
+    // Brand/Model cell
+    var tdName = document.createElement('td');
+    var divBrand = document.createElement('div');
+    divBrand.className = 'td-brand';
+    divBrand.textContent = c.brand || '—';
+    var divModel = document.createElement('div');
+    divModel.className = 'td-model';
+    divModel.textContent = c.model || '—';
+    tdName.appendChild(divBrand);
+    tdName.appendChild(divModel);
+    tr.appendChild(tdName);
+
+    // Year
+    var tdYear = document.createElement('td');
+    tdYear.textContent = c.year || '—';
+    tr.appendChild(tdYear);
+
+    // Price
+    var tdPrice = document.createElement('td');
+    tdPrice.className = 'td-price';
+    tdPrice.textContent = '$' + Number(c.price || 0).toLocaleString();
+    tr.appendChild(tdPrice);
+
+    // Type
+    var tdType = document.createElement('td');
+    tdType.style.fontSize = '.8rem';
+    tdType.style.color = 'var(--muted2)';
+    tdType.textContent = c.type || '—';
+    tr.appendChild(tdType);
+
+    // Engine
+    var tdEng = document.createElement('td');
+    tdEng.style.fontSize = '.8rem';
+    tdEng.textContent = c.engine || '—';
+    tr.appendChild(tdEng);
+
+    // Mileage
+    var tdMile = document.createElement('td');
+    tdMile.style.fontSize = '.8rem';
+    tdMile.style.color = 'var(--muted2)';
+    tdMile.textContent = c.mileage || '—';
+    tr.appendChild(tdMile);
+
+    // Status badge
+    var tdStatus = document.createElement('td');
+    if (badges[c.status]) {
+      var span = document.createElement('span');
+      span.className = badgeCls[c.status] || 'badge';
+      span.textContent = badges[c.status];
+      tdStatus.appendChild(span);
+    }
+    tr.appendChild(tdStatus);
+
+    // Actions
+    var tdActs = document.createElement('td');
+    var divActs = document.createElement('div');
+    divActs.className = 'td-acts';
+
+    var btnEdit = document.createElement('button');
+    btnEdit.className = 'ab';
+    btnEdit.textContent = '✏️ Ред.';
+    btnEdit.disabled = !cE;
+    (function(key){ btnEdit.onclick = async function(){ if(await verifyPerm('canEdit')) editCar(key); }; })(c._key);
+    divActs.appendChild(btnEdit);
+
+    var btnStatus = document.createElement('button');
+    btnStatus.className = 'ab cyc';
+    btnStatus.textContent = '↻ Статус';
+    btnStatus.disabled = !cS;
+    (function(key){ btnStatus.onclick = async function(){ if(await verifyPerm('canStatus')) cycleStatus(key); }; })(c._key);
+    divActs.appendChild(btnStatus);
+
+    var btnDel = document.createElement('button');
+    btnDel.className = 'ab del';
+    btnDel.textContent = '🗑';
+    btnDel.disabled = !cD;
+    (function(key){ btnDel.onclick = async function(){ if(await verifyPerm('canDelete')) askDelete(key); }; })(c._key);
+    divActs.appendChild(btnDel);
+
+    tdActs.appendChild(divActs);
+    tr.appendChild(tdActs);
+
+    tbody.appendChild(tr);
+  }
+}
+
+function updateBadge() { const el = document.getElementById('carsBadge'); if (el) el.textContent = CARS.length; }
+
+// Dispatcher for table action buttons
+async function tbAct(btn) {
+  const key = btn.dataset.key;
+  const act = btn.dataset.act;
+  if (act === 'edit')   { if (await verifyPerm('canEdit'))   editCar(key); }
+  if (act === 'status') { if (await verifyPerm('canStatus')) cycleStatus(key); }
+  if (act === 'delete') { if (await verifyPerm('canDelete')) askDelete(key); }
+}
+
+function populateBrandFilter() {
+  const bf = document.getElementById('tBrand'); if (!bf) return;
+  const cur = bf.value;
+  const brands = [...new Set(CARS.map(c => c.brand).filter(Boolean))].sort();
+  bf.innerHTML = '<option value="">Всі марки</option>' + brands.map(b => `<option${b===cur?' selected':''}>${b}</option>`).join('');
+}
+
+// ═══════════════════════════════════════════
+//  CLOUDFLARE R2 CONFIG
+// ═══════════════════════════════════════════
+const R2 = {
+  // S3 API endpoint — used only for upload/delete (presigned URLs)
+  endpoint:   'https://71d915a9f077d416a177b596ba394b1b.r2.cloudflarestorage.com',
+  bucket:     'autopark',
+  accessKey:  '335b21ee5d8f600eb72556e34ced2c59',
+  secretKey:  'e3347f44ad1e2e5ae3ab6c0fd3a48b2be3a6c75b74218b1b3a18a9bba16fb907',
+  region:     'auto',
+  // Public r2.dev URL — used for ALL image display (stored in DB, shown in <img>)
+  publicBase: 'https://pub-b38a2f7c180947eeb62db43b628b3a20.r2.dev',
+};
+
+// ── AWS Sig V4 primitives (Web Crypto API) ─
+async function sha256hex(data) {
+  const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : new Uint8Array(data);
+  const hash  = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+async function hmacRaw(keyBytes, msg) {
+  const k = await crypto.subtle.importKey('raw', keyBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(msg)));
+}
+function toHex(u8) { return Array.from(u8).map(b => b.toString(16).padStart(2, '0')).join(''); }
+
+// ── Generate presigned PUT URL for upload ──
+// Signature in query string → upload goes to S3 endpoint
+// But the URL saved to DB uses the public r2.dev domain
+async function r2PresignPut(objectKey, expiresIn = 600) {
+  const now        = new Date();
+  const isoDate    = now.toISOString().replace(/[-:]|\.\d{3}/g, '').slice(0, 15) + 'Z';
+  const shortDate  = isoDate.slice(0, 8);
+  const host       = R2.endpoint.replace(/^https?:\/\//, '');
+  const path       = '/' + R2.bucket + '/' + objectKey;
+  const credScope  = `${shortDate}/${R2.region}/s3/aws4_request`;
+  const credential = `${R2.accessKey}/${credScope}`;
+
+  const qp = [
+    ['X-Amz-Algorithm',     'AWS4-HMAC-SHA256'],
+    ['X-Amz-Credential',    credential],
+    ['X-Amz-Date',          isoDate],
+    ['X-Amz-Expires',       String(expiresIn)],
+    ['X-Amz-SignedHeaders', 'host'],
+  ].sort(([a], [b]) => a.localeCompare(b));
+
+  const canonQuery   = qp.map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
+  const canonHeaders = `host:${host}\n`;
+  const canonReq     = ['PUT', path, canonQuery, canonHeaders, 'host', 'UNSIGNED-PAYLOAD'].join('\n');
+  const strToSign    = `AWS4-HMAC-SHA256\n${isoDate}\n${credScope}\n${await sha256hex(canonReq)}`;
+
+  const kDate    = await hmacRaw(new TextEncoder().encode('AWS4' + R2.secretKey), shortDate);
+  const kRegion  = await hmacRaw(kDate,    R2.region);
+  const kService = await hmacRaw(kRegion,  's3');
+  const kSigning = await hmacRaw(kService, 'aws4_request');
+  const sig      = toHex(await hmacRaw(kSigning, strToSign));
+
+  return `${R2.endpoint}/${R2.bucket}/${objectKey}?${canonQuery}&X-Amz-Signature=${sig}`;
+}
+
+// ── Generate presigned DELETE URL ──
+async function r2PresignDelete(objectKey, expiresIn = 600) {
+  const now        = new Date();
+  const isoDate    = now.toISOString().replace(/[-:]|\.\d{3}/g, '').slice(0, 15) + 'Z';
+  const shortDate  = isoDate.slice(0, 8);
+  const host       = R2.endpoint.replace(/^https?:\/\//, '');
+  const path       = '/' + R2.bucket + '/' + objectKey;
+  const credScope  = `${shortDate}/${R2.region}/s3/aws4_request`;
+  const credential = `${R2.accessKey}/${credScope}`;
+
+  const qp = [
+    ['X-Amz-Algorithm',     'AWS4-HMAC-SHA256'],
+    ['X-Amz-Credential',    credential],
+    ['X-Amz-Date',          isoDate],
+    ['X-Amz-Expires',       String(expiresIn)],
+    ['X-Amz-SignedHeaders', 'host'],
+  ].sort(([a], [b]) => a.localeCompare(b));
+
+  const canonQuery   = qp.map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
+  const canonHeaders = `host:${host}\n`;
+  const canonReq     = ['DELETE', path, canonQuery, canonHeaders, 'host', 'UNSIGNED-PAYLOAD'].join('\n');
+  const strToSign    = `AWS4-HMAC-SHA256\n${isoDate}\n${credScope}\n${await sha256hex(canonReq)}`;
+
+  const kDate    = await hmacRaw(new TextEncoder().encode('AWS4' + R2.secretKey), shortDate);
+  const kRegion  = await hmacRaw(kDate,    R2.region);
+  const kService = await hmacRaw(kRegion,  's3');
+  const kSigning = await hmacRaw(kService, 'aws4_request');
+  const sig      = toHex(await hmacRaw(kSigning, strToSign));
+
+  return `${R2.endpoint}/${R2.bucket}/${objectKey}?${canonQuery}&X-Amz-Signature=${sig}`;
+}
+
+// ── Upload file to R2 ──────────────────────
+async function uploadToR2(file) {
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const key = 'cars/' + Date.now() + '_' + Math.random().toString(36).slice(2) + '.' + ext;
+  const buf = await file.arrayBuffer();
+
+  // Upload via presigned URL to S3 endpoint
+  const uploadUrl = await r2PresignPut(key);
+  const res = await fetch(uploadUrl, { method: 'PUT', body: buf });
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => String(res.status));
+    throw new Error(`Upload failed (${res.status}): ${txt}`);
+  }
+
+  // IMPORTANT: save the public r2.dev URL, NOT the S3 endpoint URL
+  const publicUrl = `${R2.publicBase}/${key}`;
+  return { url: publicUrl, key };
+}
+
+// ── Delete file from R2 ───────────────────
+async function deleteFromR2(key) {
+  if (!key) return;
+  try {
+    const url = await r2PresignDelete(key);
+    await fetch(url, { method: 'DELETE' });
+  } catch(e) { console.warn('R2 delete:', e.message); }
+}
+
+// ── Extract object key from public URL ───
+// Handles both r2.dev and S3 endpoint formats
+function r2KeyFromUrl(url) {
+  if (!url) return null;
+  // r2.dev format: https://pub-xxx.r2.dev/cars/file.jpg
+  const devPrefix = R2.publicBase + '/';
+  if (url.startsWith(devPrefix)) return url.slice(devPrefix.length);
+  // S3 format: https://accountid.r2.cloudflarestorage.com/bucket/cars/file.jpg
+  const s3Prefix = R2.endpoint + '/' + R2.bucket + '/';
+  if (url.startsWith(s3Prefix)) return url.slice(s3Prefix.length);
+  return null;
+}
+
+// ═══════════════════════════════════════════
+//  PHOTO STATE & UI
+// ═══════════════════════════════════════════
+function renderPhotos() {
+  const g = document.getElementById('photosGrid');
+  const e = document.getElementById('photosEmpty');
+  if (!g) return;
+  if (!photoUrls.length) { g.innerHTML = ''; e.style.display = 'block'; return; }
+  e.style.display = 'none';
+  g.innerHTML = photoUrls.map((u, i) =>
+    '<div class="ph-thumb' + (i===coverIdx?' cover':'') + '" onclick="setCover(' + i + ')">' +
+    '<img src="' + u + '" onerror="this.style.opacity=\'.2\'" alt=""/>' +
+    (i===coverIdx ? '<div class="ph-cov-badge">Обкладинка</div>' : '') +
+    '<div class="ph-set-cov">Обкладинка</div>' +
+    '<button class="ph-del" onclick="delPhoto(event,' + i + ')">✕</button>' +
+    '</div>'
+  ).join('');
+}
+
+function setCover(i) { coverIdx = i; renderPhotos(); }
+
+async function delPhoto(e, i) {
+  e.stopPropagation();
+  const url = photoUrls[i];
+  const key = r2KeyFromUrl(url);
+  if (key) await deleteFromR2(key);  // delete from R2 immediately
+  photoUrls.splice(i, 1);
+  if (coverIdx >= photoUrls.length) coverIdx = Math.max(0, photoUrls.length - 1);
+  renderPhotos();
+}
+
+async function handleFiles(files) {
+  if (!files || !files.length) return;
+  const arr = Array.from(files).filter(f => f.type.startsWith('image/') && f.size <= 10 * 1024 * 1024);
+  if (!arr.length) { showToast('Лише зображення до 10 МБ', 'error'); return; }
+
+  const prog  = document.getElementById('uploadProgress');
+  const bar   = document.getElementById('uploadBar');
+  const pct   = document.getElementById('uploadPct');
+  const label = document.getElementById('uploadLabel');
+  prog.style.display = 'block';
+
+  for (let idx = 0; idx < arr.length; idx++) {
+    const file = arr[idx];
+    label.textContent = `Завантаження ${idx + 1} з ${arr.length}: ${file.name}`;
+    bar.style.width   = Math.round((idx / arr.length) * 100) + '%';
+    pct.textContent   = Math.round((idx / arr.length) * 100) + '%';
+    try {
+      const { url } = await uploadToR2(file);
+      photoUrls.push(url);
+      renderPhotos();
+    } catch(err) {
+      showToast('Помилка завантаження: ' + err.message, 'error');
+    }
+  }
+
+  bar.style.width = '100%'; pct.textContent = '100%';
+  label.textContent = 'Готово ✓';
+  setTimeout(() => { prog.style.display = 'none'; bar.style.width = '0%'; }, 1500);
+
+  // Reset file input so same file can be re-selected
+  const fi = document.getElementById('fileInput');
+  if (fi) fi.value = '';
+}
+
+// ═══════════════════════════════════════════
+//  CAR DRAWER
+// ═══════════════════════════════════════════
+async function openDrawer(key = null) {
+  const permKey = key ? 'canEdit' : 'canAdd';
+  if (!(await verifyPerm(permKey))) return;
+  editKey = key;
+  document.getElementById('dTitle').innerHTML = key ? 'Редагувати <span>авто</span>' : 'Нове <span>авто</span>';
+  ['fModel','fColor','fEngine','fPower','fMileage','fDesc'].forEach(id => { const el=document.getElementById(id); if(el){el.value='';el.classList.remove('err')} });
+  ['fBrand','fType','fGearbox','fDrive','fStatus'].forEach(id => { const el=document.getElementById(id); if(el){el.selectedIndex=0;el.classList.remove('err')} });
+  document.getElementById('fYear').value=''; document.getElementById('fPrice').value='';
+  const fi = document.getElementById('fileInput'); if (fi) fi.value = '';
+  const prog = document.getElementById('uploadProgress'); if (prog) prog.style.display = 'none';
+  photoUrls=[]; coverIdx=0; renderPhotos();
+
+  if (key) {
+    const c = CARS.find(x => x._key === key); if (!c) return;
+    document.getElementById('fBrand').value   = c.brand   || '';
+    document.getElementById('fModel').value   = c.model   || '';
+    document.getElementById('fYear').value    = c.year    || '';
+    document.getElementById('fPrice').value   = c.price   || '';
+    document.getElementById('fType').value    = c.type    || '';
+    document.getElementById('fColor').value   = c.color   || '';
+    document.getElementById('fEngine').value  = c.engine  || '';
+    document.getElementById('fPower').value   = c.power   || '';
+    document.getElementById('fMileage').value = c.mileage || '';
+    document.getElementById('fGearbox').value = c.gearbox || '';
+    document.getElementById('fDrive').value   = c.drive   || '';
+    document.getElementById('fStatus').value  = c.status  || 'available';
+    document.getElementById('fDesc').value    = c.desc    || '';
+    photoUrls = Array.isArray(c.photos) && c.photos.length ? [...c.photos] : (c.img ? [c.img] : []);
+    coverIdx  = c.coverIdx || 0;
+    renderPhotos();
+  }
+  document.getElementById('dov').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function editCar(key) { openDrawer(key); }
+function closeDrawer() { document.getElementById('dov').classList.remove('open'); document.body.style.overflow=''; editKey=null; }
+function closeDovBg(e, ovId, closeFn) { if (e.target === document.getElementById(ovId)) window[closeFn](); }
+
+// ═══════════════════════════════════════════
+//  SAVE CAR
+// ═══════════════════════════════════════════
+async function saveCar() {
+  const permKey = editKey ? 'canEdit' : 'canAdd';
+  if (!(await verifyPerm(permKey))) return;
+
+  const req = [['fBrand'],['fModel'],['fYear'],['fPrice']];
+  let ok = true;
+  req.forEach(([id]) => { const el=document.getElementById(id); if(!el.value.trim()){el.classList.add('err');ok=false}else el.classList.remove('err'); });
+  if (!ok) { showToast('Заповніть обовʼязкові поля','error'); return; }
+
+  const btn = document.getElementById('btnSave'); btn.disabled=true; btn.textContent='⏳ Збереження…';
+  const data = {
+    brand:    document.getElementById('fBrand').value,
+    model:    document.getElementById('fModel').value,
+    year:     parseInt(document.getElementById('fYear').value),
+    price:    parseFloat(document.getElementById('fPrice').value),
+    type:     document.getElementById('fType').value,
+    color:    document.getElementById('fColor').value,
+    engine:   document.getElementById('fEngine').value,
+    power:    document.getElementById('fPower').value,
+    mileage:  document.getElementById('fMileage').value,
+    gearbox:  document.getElementById('fGearbox').value,
+    drive:    document.getElementById('fDrive').value,
+    status:   document.getElementById('fStatus').value,
+    desc:     document.getElementById('fDesc').value,
+    photos:   photoUrls, coverIdx, img: photoUrls[coverIdx] || '',
+  };
+  try {
+    if (editKey) {
+      await db.ref('cars/' + editKey).update(data);
+      logAct(`✏️ Відредаговано <strong>${data.brand} ${data.model}</strong>`, '#4a9eff');
+      showToast('Збережено ✓','success');
+    } else {
+      data.createdAt = Date.now();
+      await db.ref('cars').push(data);
+      logAct(`➕ Додано <strong>${data.brand} ${data.model}</strong> — $${data.price.toLocaleString()}`, '#2ecc71');
+      showToast(`${data.brand} ${data.model} додано ✓`,'success');
+    }
+    closeDrawer();
+  } catch(e) { showToast('Помилка: ' + e.message,'error'); }
+  finally { btn.disabled=false; btn.innerHTML='💾 Зберегти'; }
+}
+
+// ═══════════════════════════════════════════
+//  CYCLE STATUS
+// ═══════════════════════════════════════════
+async function cycleStatus(key) {
+  if (!(await verifyPerm('canStatus'))) return;
+  const c = CARS.find(x => x._key === key); if (!c) return;
+  const nxt = {available:'reserved',reserved:'sold',sold:'available'};
+  const lbl = {available:'В наявності',reserved:'Зарезервовано',sold:'Продано'};
+  const ns  = nxt[c.status] || 'available';
+  try {
+    await db.ref('cars/' + key).update({ status: ns });
+    logAct(`🔄 <strong>${c.brand} ${c.model}</strong> → ${lbl[ns]}`, '#e8c84a');
+    showToast('Статус: ' + lbl[ns],'info');
+  } catch(e) { showToast('Помилка: '+e.message,'error'); }
+}
+
+// ═══════════════════════════════════════════
+//  DELETE
+// ═══════════════════════════════════════════
+function askDelete(key) {
+  delKey=key; delType='car'; delAdminUid=null;
+  const c = CARS.find(x => x._key === key);
+  document.getElementById('cText').textContent = c ? `Видалити: ${c.brand} ${c.model}?` : 'Цю дію неможливо скасувати.';
+  document.getElementById('confirmOv').classList.add('open');
+}
+function closeConfirm() { document.getElementById('confirmOv').classList.remove('open'); }
+async function confirmDelete() {
+  if (delType === 'car') {
+    if (!(await verifyPerm('canDelete'))) { closeConfirm(); return; }
+    const c = CARS.find(x => x._key === delKey);
+    try {
+      await db.ref('cars/'+delKey).remove();
+      // Also delete all photos from R2
+      if (c && Array.isArray(c.photos)) {
+        c.photos.forEach(url => { const k = r2KeyFromUrl(url); if (k) deleteFromR2(k); });
+      } else if (c && c.img) {
+        const k = r2KeyFromUrl(c.img); if (k) deleteFromR2(k);
+      }
+      if (c) { logAct(`🗑️ Видалено <strong>${c.brand} ${c.model}</strong>`,'#ff4444'); showToast(`${c.brand} ${c.model} видалено`,'error'); }
+    } catch(e) { showToast('Помилка: '+e.message,'error'); }
+  } else if (delType === 'admin' && delAdminUid) {
+    if (!(await verifyPerm('canAdmins'))) { closeConfirm(); return; }
+    const name = ADMINS[delAdminUid]?.name || delAdminUid;
+    try { await db.ref('admins/'+delAdminUid).remove(); logAct(`🗑️ Видалено адміна <strong>${name}</strong>`,'#ff4444'); showToast('Адміна видалено','error'); }
+    catch(e) { showToast('Помилка: '+e.message,'error'); }
+  }
+  closeConfirm();
+}
+
+// ═══════════════════════════════════════════
+//  ADMINS
+// ═══════════════════════════════════════════
+function renderAdmins() {
+  const grid = document.getElementById('adminsGrid');
+  const list = Object.entries(ADMINS);
+  if (!list.length) { grid.innerHTML='<div class="no-rows">Немає адміністраторів</div>'; return; }
+  grid.innerHTML = list.map(([uid, a]) => {
+    const isSelf  = currentUser && uid === currentUser.uid;
+    const isSup   = a.role === 'superadmin';
+    const perms   = a.perms || {};
+    const canEdit = hasPerm('canAdmins') && !isSelf;
+    const permsHtml = isSup
+      ? '<div style="color:var(--muted);font-size:.78rem;margin-bottom:14px">Повний доступ</div>'
+      : '<div class="perm-list">' + PERM_DEFS.map(p =>
+          '<div class="perm-row">' +
+          '<span class="perm-lbl">' + p.label + '</span>' +
+          '<label class="ptog"><input type="checkbox"' + (perms[p.key] ? ' checked' : '') + (canEdit ? '' : ' disabled') +
+          ' data-uid="' + uid + '" data-key="' + p.key + '" onchange="updPerm(this)"/><span class="pslider"></span></label>' +
+          '</div>'
+        ).join('') + '</div>';
+    return '<div class="admin-card">' +
+      (isSelf ? '<div class="self-badge">Це ви</div>' : '') +
+      '<div class="acard-av">' + (a.name||'?').charAt(0).toUpperCase() + '</div>' +
+      '<div class="acard-name">' + (a.name||'—') + '</div>' +
+      '<div class="acard-email">' + (a.email||'') + '</div>' +
+      '<span class="role-tag ' + (isSup?'rt-super':'rt-admin') + '">' + (isSup?'⭐ Супер-адмін':'Адміністратор') + '</span>' +
+      permsHtml +
+      '<div class="acard-acts">' +
+      (!isSelf && hasPerm('canAdmins') ? '<button class="ab del" data-uid="' + uid + '" onclick="askDelAdmin(this.dataset.uid)">🗑 Видалити</button>' : '') +
+      '</div></div>';
+  }).join('');
+}
+
+async function updPerm(input) {
+  if (!(await verifyPerm('canAdmins'))) {
+    // Revert checkbox visually
+    input.checked = !input.checked;
+    return;
+  }
+  const uid = input.dataset.uid;
+  const key = input.dataset.key;
+  const val = input.checked;
+  try {
+    await db.ref('admins/' + uid + '/perms/' + key).set(val);
+    const name = ADMINS[uid]?.name || uid;
+    const def  = PERM_DEFS.find(p => p.key === key)?.label || key;
+    logAct('🔑 <strong>' + name + '</strong>: ' + def + ' → ' + (val?'так':'ні'), '#ff8c42');
+  } catch(e) { showToast('Помилка: '+e.message,'error'); }
+}
+
+async function askDelAdmin(uid) {
+  if (!(await verifyPerm('canAdmins'))) return;
+  delType='admin'; delAdminUid=uid; delKey=null;
+  document.getElementById('cText').textContent = `Видалити адміна "${ADMINS[uid]?.name||uid}"?`;
+  document.getElementById('confirmOv').classList.add('open');
+}
+
+async function openAdminDrawer() {
+  if (!(await verifyPerm('canAdmins'))) return;
+  ['aName','aEmail','aPass'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('aRole').selectedIndex=0;
+  document.getElementById('aPerms').innerHTML = PERM_DEFS.map(p =>
+    `<div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:.82rem;color:var(--muted2)">${p.label}</span><label class="ptog"><input type="checkbox" id="np_${p.key}" checked/><span class="pslider"></span></label></div>`
+  ).join('');
+  document.getElementById('adov').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeAdminDrawer() { document.getElementById('adov').classList.remove('open'); document.body.style.overflow=''; }
+
+async function saveAdmin() {
+  if (!(await verifyPerm('canAdmins'))) return;
+  const name  = document.getElementById('aName').value.trim();
+  const email = document.getElementById('aEmail').value.trim();
+  const pass  = document.getElementById('aPass').value;
+  const role  = document.getElementById('aRole').value;
+  if (!name||!email||!pass) { showToast('Заповніть усі поля','error'); return; }
+  if (pass.length < 6) { showToast('Пароль мін. 6 символів','error'); return; }
+
+  const btn = document.getElementById('btnAdminSave'); btn.disabled=true; btn.textContent='⏳ Створення…';
+  try {
+    // Create via secondary app instance to avoid logging out current user
+    const secApp  = firebase.initializeApp(firebase.app().options, 'sec_' + Date.now());
+    const secAuth = secApp.auth();
+    const cred    = await secAuth.createUserWithEmailAndPassword(email, pass);
+    await cred.user.updateProfile({ displayName: name });
+    const uid = cred.user.uid;
+    await secAuth.signOut();
+    await secApp.delete();
+
+    const perms = {};
+    PERM_DEFS.forEach(p => { perms[p.key] = document.getElementById('np_' + p.key)?.checked ?? false; });
+    await db.ref('admins/' + uid).set({ name, email, role, perms });
+    logAct(`👤 Додано адміна <strong>${name}</strong>`, '#ff8c42');
+    showToast(name + ' додано ✓','success');
+    closeAdminDrawer();
+  } catch(e) { showToast('Помилка: '+e.message,'error'); }
+  finally { btn.disabled=false; btn.innerHTML='💾 Створити'; }
+}
+
+// ═══════════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════════
+function loadSettingsForm() {
+  const m = { Name:'name', Phone:'phone', Addr:'addr', Email:'email', Hours:'hours' };
+  Object.entries(m).forEach(([k, fk]) => {
+    const el = document.getElementById('cfg' + k);
+    if (el && SETTINGS[fk]) el.value = SETTINGS[fk];
+  });
+}
+
+async function saveSettings() {
+  if (!(await verifyPerm('canSettings'))) return;
+  const data = { name:document.getElementById('cfgName').value.trim(), phone:document.getElementById('cfgPhone').value.trim(), addr:document.getElementById('cfgAddr').value.trim(), email:document.getElementById('cfgEmail').value.trim(), hours:document.getElementById('cfgHours').value.trim() };
+  try { await db.ref('settings').set(data); logAct('⚙️ Оновлено налаштування магазину','#9b59b6'); showToast('Збережено ✓','success'); }
+  catch(e) { showToast('Помилка: '+e.message,'error'); }
+}
+
+async function updateMyProfile() {
+  const dname = document.getElementById('cfgDname').value.trim();
+  const npass = document.getElementById('cfgNpass').value;
+  try {
+    if (dname) { await auth.currentUser.updateProfile({displayName:dname}); await db.ref('admins/'+auth.currentUser.uid+'/name').set(dname); }
+    if (npass) { if(npass.length<6){showToast('Пароль мін. 6 символів','error');return;} await auth.currentUser.updatePassword(npass); }
+    showToast('Профіль оновлено ✓','success');
+  } catch(e) { showToast('Помилка: '+e.message,'error'); }
+}
+
+// ═══════════════════════════════════════════
+//  ACTIVITY LOG
+// ═══════════════════════════════════════════
+function logAct(msg, color) {
+  const name = currentAdmin?.name || currentUser?.email || '?';
+  db.ref('activity').push({ msg, color, adminName:name, adminUid:currentUser?.uid||'', timeLabel:new Date().toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'}), ts:Date.now() }).catch(()=>{});
+}
+
+// ═══════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════
+function showToast(msg, type='success') {
+  const t=document.getElementById('toast'); document.getElementById('toastMsg').innerHTML=msg;
+  t.className='toast '+type+' show'; clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+document.addEventListener('keydown', e => { if(e.key==='Escape'){closeDrawer();closeAdminDrawer();closeConfirm();} });
+</script>
+</body>
+</html>
