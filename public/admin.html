@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>АВТОПАРК — Адмін</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
   <style>
@@ -237,15 +237,90 @@
     .set-field input:focus{outline:none;border-color:var(--accent)}
 
     @media(max-width:900px){
+      html,body{overflow-x:hidden}
+
+      /* Hide desktop sidebar, use bottom nav instead */
       :root{--sw:0px}
-      .sidebar{display:none}.main{margin-left:0}
-      .stats-row{grid-template-columns:1fr 1fr}
-      .dash-grid{grid-template-columns:1fr}
-      .drawer{width:100%}
+      .sidebar{display:none!important}
+      .main{margin-left:0}
+
+      /* Mobile topbar */
+      .topbar{
+        height:56px;padding:0 12px;gap:8px;
+        position:sticky;top:0;
+      }
+      .tb-title{font-size:1.1rem}
+      .tb-search{width:110px;padding:6px 10px;font-size:.78rem}
+      .btn-add{padding:7px 12px;font-size:.75rem}
+      .tb-link{display:none}
+
+      /* Pages */
+      .page{padding:14px 14px 80px}
+
+      /* Stats — 2 col */
+      .stats-row{grid-template-columns:1fr 1fr;gap:2px}
+      .sc{padding:14px}
+      .sc-val{font-size:1.8rem}
+
+      /* Dash grid — single col */
+      .dash-grid{grid-template-columns:1fr;gap:14px;margin-top:14px}
+
+      /* Table — horizontal scroll */
+      .tw{overflow:hidden}
+      .tf{padding:10px 12px;gap:7px;flex-wrap:wrap}
+      .tfi{font-size:.76rem;padding:6px 8px}
+      .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+      table{min-width:600px}
+      th,td{padding:9px 10px;font-size:.78rem}
+      .td-acts{gap:3px;flex-wrap:nowrap}
+      .ab{padding:3px 6px;font-size:.65rem}
+
+      /* Drawer — full screen */
+      .drawer{width:100%;max-width:100%}
+      .dov .drawer{border-left:none}
+
+      /* Form grids — single col */
       .fg{grid-template-columns:1fr}
       .set-grid{grid-template-columns:1fr}
-      .topbar{padding:0 16px}
-      .tb-search{width:130px}
+
+      /* Admins grid — single col */
+      .admins-grid{grid-template-columns:1fr}
+
+      /* Stats cards — smaller */
+      .sc-icon{font-size:1rem;margin-bottom:6px}
+
+      /* ── MOBILE BOTTOM NAV ── */
+      .mob-nav{
+        display:flex;position:fixed;bottom:0;left:0;right:0;z-index:60;
+        background:var(--surface);border-top:1px solid var(--border2);
+        height:60px;
+      }
+      .mob-nav-item{
+        flex:1;display:flex;flex-direction:column;align-items:center;
+        justify-content:center;gap:3px;cursor:pointer;
+        color:var(--muted);font-size:.55rem;text-transform:uppercase;
+        letter-spacing:1px;font-weight:600;border:none;background:none;
+        padding:0;transition:color .15s;
+      }
+      .mob-nav-item.active{color:var(--accent)}
+      .mob-nav-item svg{width:20px;height:20px;flex-shrink:0}
+      .mob-nav-item.locked{opacity:.3;pointer-events:none}
+
+      /* Mobile user info bar (above bottom nav) */
+      .mob-user{
+        display:flex;align-items:center;justify-content:space-between;
+        padding:8px 14px;background:var(--card);border-top:1px solid var(--border);
+        position:fixed;bottom:60px;left:0;right:0;z-index:59;
+        font-size:.75rem;color:var(--muted2);
+      }
+      .mob-user-name{font-weight:700;color:var(--text)}
+      .mob-logout{background:none;border:1px solid var(--border2);color:var(--red);
+        padding:4px 10px;font-size:.7rem;cursor:pointer;font-family:var(--font-body)}
+    }
+
+    /* Desktop: hide mobile nav */
+    @media(min-width:901px){
+      .mob-nav,.mob-user{display:none!important}
     }
   </style>
 </head>
@@ -368,7 +443,7 @@
           <option value="yd">Рік ↓</option>
         </select>
       </div>
-      <div style="overflow-x:auto">
+      <div class="table-wrap" style="overflow-x:auto">
         <table>
           <thead><tr><th></th><th>Марка / Модель</th><th>Рік</th><th>Ціна</th><th>Тип</th><th>Двигун</th><th>Пробіг</th><th>Статус</th><th>Дії</th></tr></thead>
           <tbody id="tBody">
@@ -417,6 +492,32 @@
     </div>
   </div>
 </main>
+
+<!-- MOBILE BOTTOM NAV (hidden on desktop via CSS) -->
+<nav class="mob-nav" id="mobNav">
+  <button class="mob-nav-item active" id="mob-dashboard" onclick="showPage('dashboard',this);syncMobNav(this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    Дашборд
+  </button>
+  <button class="mob-nav-item" id="mob-cars" onclick="showPage('cars',this);syncMobNav(this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect x="9" y="11" width="14" height="10" rx="1"/><circle cx="12" cy="21" r="1"/><circle cx="20" cy="21" r="1"/></svg>
+    Авто
+  </button>
+  <button class="mob-nav-item" id="mob-admins" onclick="showPage('admins',this);syncMobNav(this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Адміни
+  </button>
+  <button class="mob-nav-item" id="mob-settings" onclick="showPage('settings',this);syncMobNav(this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    Налашт.
+  </button>
+</nav>
+
+<!-- MOBILE USER BAR -->
+<div class="mob-user" id="mobUser" style="display:none">
+  <div><span class="mob-user-name" id="mobUserName">—</span> <span style="color:var(--muted);font-size:.68rem" id="mobUserRole"></span></div>
+  <button class="mob-logout" onclick="doLogout()">Вийти</button>
+</div>
 
 <!-- CAR DRAWER -->
 <div class="dov" id="dov" onclick="closeDovBg(event,'dov','closeDrawer')">
@@ -710,18 +811,27 @@ async function verifyPerm(key) {
 }
 
 function applyPerms() {
-  // nav locks
+  // Desktop sidebar locks
   document.getElementById('nav-settings')?.classList.toggle('locked', !hasPerm('canSettings'));
   document.getElementById('nav-admins')?.classList.toggle('locked',   !hasPerm('canAdmins'));
-  // add button
+  // Mobile nav locks
+  document.getElementById('mob-settings')?.classList.toggle('locked', !hasPerm('canSettings'));
+  document.getElementById('mob-admins')?.classList.toggle('locked',   !hasPerm('canAdmins'));
+  // Add button
   const b = document.getElementById('btnAdd');
   if (b) b.style.display = hasPerm('canAdd') ? '' : 'none';
 }
 
 function updateSidebarUser() {
   const name = currentAdmin?.name || currentUser?.email || '?';
+  const role = currentAdmin?.role === 'superadmin' ? 'Супер-адмін' : 'Адміністратор';
   const el1 = document.getElementById('sbName');   if (el1) el1.textContent = name;
   const el2 = document.getElementById('sbAvatar'); if (el2) el2.textContent = name.charAt(0).toUpperCase();
+  // Mobile user bar
+  const mn = document.getElementById('mobUserName'); if (mn) mn.textContent = name;
+  const mr = document.getElementById('mobUserRole'); if (mr) mr.textContent = role;
+  const mu = document.getElementById('mobUser');
+  if (mu) mu.style.display = currentUser ? 'flex' : 'none';
 }
 
 function doLogin() {
@@ -815,6 +925,12 @@ function stopListeners() {
 // ═══════════════════════════════════════════
 //  NAVIGATION
 // ═══════════════════════════════════════════
+// Sync mobile bottom nav active state
+function syncMobNav(el) {
+  document.querySelectorAll('.mob-nav-item').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+}
+
 async function showPage(id, el) {
   // Verify from DB for protected pages
   if (id === 'settings') { if (!(await verifyPerm('canSettings'))) return; }
@@ -827,6 +943,8 @@ async function showPage(id, el) {
   const titles = {dashboard:'ДАШБОРД', cars:'КАТАЛОГ АВТ', admins:'АДМІНІСТРАТОРИ', settings:'НАЛАШТУВАННЯ'};
   document.getElementById('tbTitle').textContent = titles[id] || '';
   if (id === 'dashboard') { updateStats(); renderActivity(); }
+  // Sync mobile nav
+  syncMobNav(document.getElementById('mob-' + id));
 }
 
 // Internal redirect — skips DB permission check (used by the perm watcher)
@@ -840,6 +958,7 @@ function navTo(id) {
   const titles = {dashboard:'ДАШБОРД', cars:'КАТАЛОГ АВТ', admins:'АДМІНІСТРАТОРИ', settings:'НАЛАШТУВАННЯ'};
   document.getElementById('tbTitle').textContent = titles[id] || '';
   if (id === 'dashboard') { updateStats(); renderActivity(); }
+  syncMobNav(document.getElementById('mob-' + id));
 }
 function updateStats() {
   document.getElementById('s-total').textContent = CARS.length;

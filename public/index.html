@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>АВТОПАРК — Авторинок преміум авто</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <style>
@@ -143,7 +143,8 @@
     .modal-body{padding:32px}
     .modal-brand{font-size:.72rem;text-transform:uppercase;letter-spacing:2px;color:var(--accent);font-weight:700;margin-bottom:6px}
     .modal-name{font-family:var(--font-display);font-size:3rem;letter-spacing:2px;margin-bottom:8px}
-    .modal-desc{color:var(--muted);font-size:.92rem;line-height:1.7;margin-bottom:28px}
+    /* white-space:pre-wrap preserves line breaks and spaces in description */
+    .modal-desc{color:var(--muted);font-size:.92rem;line-height:1.7;margin-bottom:28px;white-space:pre-wrap;word-break:break-word}
     .modal-specs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:28px}
     .modal-spec{background:var(--surface);padding:16px}
     .modal-spec-key{font-size:.68rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:4px}
@@ -151,6 +152,21 @@
     .modal-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
     .modal-price{font-family:var(--font-display);font-size:2.8rem;color:var(--accent);letter-spacing:2px}
     .modal-actions{display:flex;gap:12px}
+
+    /* LIGHTBOX — click photo to open fullscreen (desktop) */
+    .lightbox{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+    .lightbox.open{opacity:1;pointer-events:all}
+    .lightbox img{max-width:92vw;max-height:92vh;object-fit:contain;display:block}
+    .lightbox-close{position:absolute;top:20px;right:24px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.4rem;transition:background .2s;border-radius:50%}
+    .lightbox-close:hover{background:rgba(255,255,255,.2)}
+    .lightbox-prev,.lightbox-next{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;width:52px;height:52px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:2rem;transition:background .2s;border-radius:50%}
+    .lightbox-prev{left:20px}
+    .lightbox-next{right:20px}
+    .lightbox-prev:hover,.lightbox-next:hover{background:rgba(232,200,74,.5);border-color:var(--accent)}
+    /* Make slider images clickable on desktop */
+    @media(min-width:901px){
+      .slider-track img{cursor:zoom-in}
+    }
 
     /* TOAST */
     .toast{position:fixed;bottom:32px;right:32px;z-index:300;background:var(--card);border:1px solid var(--accent);color:var(--text);padding:14px 24px;font-size:.88rem;font-weight:500;transform:translateY(80px);opacity:0;transition:all .35s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
@@ -170,29 +186,71 @@
 
     /* RESPONSIVE */
     @media(max-width:900px){
+      /* Prevent horizontal scroll globally */
+      html,body{overflow-x:hidden;max-width:100%}
+
       nav{padding:14px 20px}
       .nav-links,.nav-cta{display:none}
       .burger{display:flex}
       .hero{padding:0 20px 56px;min-height:100svh}
       .hero-stats,.hero-car-placeholder{display:none}
       .hero h1{font-size:clamp(3rem,11vw,4.5rem)}
-      .filters-section{padding:10px 16px;top:52px;overflow-x:auto;-webkit-overflow-scrolling:touch}
-      .filters-inner{flex-wrap:nowrap;gap:8px;min-width:max-content}
+
+      /* Filters — 2x2 grid on mobile, no scroll */
+      .filters-section{padding:10px 14px;top:52px}
+      .filters-inner{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:8px;
+        flex-wrap:unset;
+        min-width:unset;
+      }
       .filter-label{display:none}
-      .filter-select{padding:6px 10px;font-size:.75rem;min-width:108px}
-      .filter-btn-clear{padding:6px 10px;font-size:.75rem}
-      .filter-count{display:none}
+      .filter-select{
+        width:100%;min-width:0;
+        padding:8px 10px;font-size:.78rem;
+      }
+      .filter-btn-clear{
+        grid-column:1/-1;
+        width:100%;padding:8px 10px;font-size:.78rem;text-align:center;
+      }
+      .filter-count{
+        grid-column:1/-1;
+        text-align:center;font-size:.78rem;margin:0;
+      }
+
       .catalog{padding:32px 16px}
       .cars-grid{grid-template-columns:1fr}
       footer{grid-template-columns:1fr 1fr;padding:28px 20px}
       .footer-bottom{padding:12px 20px;flex-direction:column;gap:6px;text-align:center}
-      .modal-overlay{padding:0;align-items:flex-end}
-      .modal{max-height:95vh}
-      .slider-wrap{height:240px}
-      .modal-body{padding:20px}
-      .modal-name{font-size:2rem}
+
+      /* Modal — true fullscreen on mobile */
+      .modal-overlay{padding:0;align-items:stretch}
+      .modal{
+        max-height:100dvh;
+        height:100dvh;
+        border-radius:0;
+        display:flex;
+        flex-direction:column;
+      }
+      .slider-wrap{height:52vw;min-height:200px;flex-shrink:0}
+      .modal-body{
+        padding:16px;
+        flex:1;
+        overflow-y:auto;
+        -webkit-overflow-scrolling:touch;
+      }
+      .modal-name{font-size:1.6rem}
       .modal-specs-grid{grid-template-columns:repeat(2,1fr)}
-      .modal-price{font-size:2rem}
+      .modal-price{font-size:1.8rem}
+      .modal-footer{flex-direction:column;align-items:flex-start;gap:12px}
+      .modal-actions{width:100%;display:flex;gap:10px}
+      .modal-actions a,.modal-actions button{flex:1;text-align:center;justify-content:center}
+      .modal-close{top:10px;right:10px}
+    }
+    @media(max-width:400px){
+      .filters-inner{grid-template-columns:1fr}
+      .filter-btn-clear,.filter-count{grid-column:1}
     }
   </style>
 </head>
@@ -336,6 +394,14 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- LIGHTBOX (desktop photo zoom) -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <button class="lightbox-prev" onclick="lbMove(event,-1)">&#8249;</button>
+  <img id="lightboxImg" src="" alt="" onclick="event.stopPropagation()"/>
+  <button class="lightbox-next" onclick="lbMove(event,1)">&#8250;</button>
+</div>
 
 <footer>
   <div class="footer-brand">
@@ -543,19 +609,49 @@ function buildSlider(photos) {
   const track = document.getElementById('sliderTrack');
   const dots  = document.getElementById('sliderDots');
   const wrap  = document.getElementById('sliderWrap');
-  track.innerHTML = sliderPhotos.map(u =>
-    `<img src="${u}" alt="" onerror="this.src='https://placehold.co/820x340/0d0d12/555?text=🚗'"/>`
-  ).join('');
+
+  // Clear and build using DOM (not innerHTML) so click events survive
+  track.innerHTML = '';
+  sliderPhotos.forEach((u, i) => {
+    const img = document.createElement('img');
+    img.src = u;
+    img.alt = '';
+    img.onerror = function(){ this.src='https://placehold.co/820x340/0d0d12/555?text=🚗'; };
+    img.onclick = function(e){
+      if (window.innerWidth > 900) { e.stopPropagation(); openLightbox(i); }
+    };
+    track.appendChild(img);
+  });
+
   track.style.transform = 'translateX(0)';
   dots.innerHTML = sliderPhotos.length > 1
     ? sliderPhotos.map((_, i) => `<button class="slider-dot${i===0?' active':''}" onclick="slideTo(${i})"></button>`).join('')
     : '';
   wrap.classList.toggle('single', sliderPhotos.length <= 1);
   document.getElementById('sliderCounter').textContent = `1 / ${sliderPhotos.length}`;
-  // touch swipe
   let tx = 0;
   wrap.ontouchstart = e => { tx = e.touches[0].clientX; };
   wrap.ontouchend   = e => { const dx = e.changedTouches[0].clientX - tx; if (Math.abs(dx) > 40) slideMove(dx < 0 ? 1 : -1); };
+}
+
+// ── Lightbox (desktop photo zoom) ─────────
+function openLightbox(idx) {
+  sliderIdx = idx;
+  document.getElementById('lightboxImg').src = sliderPhotos[idx] || '';
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function lbMove(e, dir) {
+  e.stopPropagation();
+  const idx = (sliderIdx + dir + sliderPhotos.length) % sliderPhotos.length;
+  sliderIdx = idx;
+  document.getElementById('lightboxImg').src = sliderPhotos[idx] || '';
+  // Also sync the modal slider
+  updateSlider();
 }
 
 // ── Modal ─────────────────────────────────
@@ -622,7 +718,11 @@ function showToast(msg) {
   clearTimeout(t._timer);
   t._timer = setTimeout(() => t.classList.remove('show'), 3200);
 }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); closeLightbox(); }
+  if (e.key === 'ArrowLeft')  lbMove({ stopPropagation:()=>{} }, -1);
+  if (e.key === 'ArrowRight') lbMove({ stopPropagation:()=>{} }, 1);
+});
 
 })(); // end bootstrap
 </script>
