@@ -689,16 +689,16 @@ async function bootstrap() {
 
 bootstrap();
 
-function initApp(auth, db) {
-
 // ═══════════════════════════════════════════
-//  STATE
+//  STATE (global — accessible from onclick handlers)
 // ═══════════════════════════════════════════
 let CARS = [], ACTIVITY = [], ADMINS = {}, SETTINGS = {};
 let currentUser = null, currentAdmin = null;
 let editKey = null, delKey = null, delType = 'car', delAdminUid = null;
 let searchQ = '', photoUrls = [], coverIdx = 0;
-let _listeners = [];  // { ref, type } for cleanup
+let _listeners = [];
+let _myAdminRef = null;
+let auth, db; // set by bootstrap → initApp
 
 const PERM_DEFS = [
   {key:'canAdd',      label:'Додавати авто'},
@@ -708,6 +708,10 @@ const PERM_DEFS = [
   {key:'canSettings', label:'Налаштування'},
   {key:'canAdmins',   label:'Управління адмінами'},
 ];
+
+function initApp(_auth, _db) {
+  auth = _auth;
+  db   = _db;
 
 // ═══════════════════════════════════════════
 //  CONNECTION
@@ -744,8 +748,7 @@ auth.onAuthStateChanged(async user => {
   }
 });
 
-// Personal admin ref — managed separately so stopListeners() never kills it
-let _myAdminRef = null;
+} // end initApp — all functions below are global scope
 
 async function initAdminData(uid) {
   // Load once first
@@ -1566,8 +1569,6 @@ function showToast(msg, type='success') {
 }
 
 document.addEventListener('keydown', e => { if(e.key==='Escape'){closeDrawer();closeAdminDrawer();closeConfirm();} });
-
-} // end initApp
 </script>
 </body>
 </html>

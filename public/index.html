@@ -505,6 +505,8 @@ db.ref('cars').on('value', snap => {
     '<div style="grid-column:1/-1;text-align:center;padding:60px;color:#ff4444">⚠️ Помилка завантаження: ' + err.message + '</div>';
 });
 
+})(); // end bootstrap — all function declarations below are global scope
+
 // ── Brand filter ──────────────────────────
 function populateBrandFilter() {
   const sel = document.getElementById('filterBrand');
@@ -728,8 +730,6 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowLeft')  lbMove({ stopPropagation:()=>{} }, -1);
   if (e.key === 'ArrowRight') lbMove({ stopPropagation:()=>{} }, 1);
 });
-
-})(); // end bootstrap
 </script>
 </body>
 </html>
