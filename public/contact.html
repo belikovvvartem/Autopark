@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Контакти — АВТОПАРК</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0a0a0c;--surface:#111116;--card:#15151c;--border:rgba(255,255,255,.07);
+      --border2:rgba(255,255,255,.12);--accent:#e8c84a;--text:#f0ede6;--muted:#7a7882;
+      --green:#2ecc71;--red:#ff4444;
+      --font-display:'Bebas Neue',sans-serif;--font-body:'Manrope',sans-serif;
+    }
+    html{scroll-behavior:smooth}
+    body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflow-x:hidden;min-height:100vh;display:flex;flex-direction:column}
+
+    /* NAV */
+    nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;
+      padding:14px 48px;background:rgba(10,10,12,.95);backdrop-filter:blur(10px);
+      border-bottom:1px solid var(--border)}
+    .nav-logo{font-family:var(--font-display);font-size:1.8rem;letter-spacing:4px;color:var(--accent);text-decoration:none}
+    .nav-logo span{color:var(--text)}
+    .nav-links{display:flex;gap:28px;list-style:none}
+    .nav-links a{color:var(--muted);text-decoration:none;font-size:.82rem;font-weight:500;
+      letter-spacing:1.5px;text-transform:uppercase;transition:color .2s}
+    .nav-links a:hover,.nav-links a.active{color:var(--accent)}
+    .burger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px;background:none;border:none}
+    .burger span{display:block;width:24px;height:2px;background:var(--text);border-radius:2px;transition:all .3s}
+    .burger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+    .burger.open span:nth-child(2){opacity:0}
+    .burger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+    .mobile-nav{display:none;position:fixed;inset:0;background:rgba(10,10,12,.97);backdrop-filter:blur(12px);
+      z-index:99;flex-direction:column;align-items:center;justify-content:center;gap:28px}
+    .mobile-nav.open{display:flex}
+    .mobile-nav a{font-family:var(--font-display);font-size:2.4rem;letter-spacing:3px;color:var(--text);text-decoration:none}
+    .mobile-nav a:hover{color:var(--accent)}
+    .mobile-nav-close{position:absolute;top:20px;right:24px;background:none;border:none;color:var(--muted);font-size:1.6rem;cursor:pointer}
+
+    /* PAGE */
+    .page-wrap{flex:1;max-width:1100px;margin:0 auto;padding:48px 24px 60px;width:100%}
+    .page-title{font-family:var(--font-display);font-size:clamp(2.5rem,6vw,4rem);letter-spacing:2px;margin-bottom:40px}
+    .page-title span{color:var(--accent)}
+
+    /* MAIN GRID */
+    .contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:40px}
+
+    /* INFO CARD */
+    .info-card{background:var(--card);border:1px solid var(--border);padding:32px}
+    .info-title{font-size:.62rem;text-transform:uppercase;letter-spacing:2px;color:var(--accent);margin-bottom:20px}
+    .info-row{display:flex;align-items:flex-start;gap:14px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+    .info-row:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none}
+    .info-icon{width:38px;height:38px;background:rgba(232,200,74,.1);border:1px solid rgba(232,200,74,.2);
+      display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1rem}
+    .info-label{font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:4px}
+    .info-val{font-weight:600;font-size:.95rem;color:var(--text)}
+    .info-val a{color:var(--accent);text-decoration:none}
+    .info-val a:hover{text-decoration:underline}
+
+    /* MAP */
+    .map-card{background:var(--card);border:1px solid var(--border);overflow:hidden;position:relative}
+    .map-card iframe{width:100%;height:100%;min-height:340px;border:none;display:block;filter:invert(.85) hue-rotate(180deg)}
+    .map-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;
+      min-height:340px;gap:12px;color:var(--muted);font-size:.85rem;text-align:center;padding:20px}
+    .map-placeholder svg{opacity:.3}
+
+    /* CALLBACK FORM */
+    .callback-card{background:var(--card);border:1px solid var(--border);padding:32px}
+    .cb-title{font-family:var(--font-display);font-size:1.6rem;letter-spacing:2px;margin-bottom:6px}
+    .cb-title span{color:var(--accent)}
+    .cb-sub{color:var(--muted);font-size:.85rem;margin-bottom:22px}
+    .cb-field{display:flex;gap:10px;flex-wrap:wrap}
+    .cb-input{flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border2);
+      color:var(--text);padding:13px 16px;font-family:var(--font-body);font-size:.9rem;transition:border-color .2s}
+    .cb-input:focus{outline:none;border-color:var(--accent)}
+    .cb-input.err{border-color:var(--red)}
+    .cb-btn{background:var(--accent);color:#000;border:none;padding:13px 28px;
+      font-family:var(--font-body);font-weight:800;font-size:.88rem;letter-spacing:1px;
+      text-transform:uppercase;cursor:pointer;transition:all .2s;white-space:nowrap}
+    .cb-btn:hover:not(:disabled){background:#f5d55c;transform:translateY(-1px)}
+    .cb-btn:disabled{opacity:.5;cursor:not-allowed}
+    .cb-success{display:none;margin-top:14px;padding:12px 16px;background:rgba(46,204,113,.1);
+      border:1px solid rgba(46,204,113,.3);color:var(--green);font-size:.88rem;font-weight:600}
+
+    /* TOAST */
+    .toast{position:fixed;bottom:28px;right:28px;z-index:300;background:var(--card);
+      border:1px solid var(--accent);color:var(--text);padding:13px 22px;
+      font-size:.88rem;font-weight:500;transform:translateY(80px);opacity:0;
+      transition:all .35s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+    .toast.show{transform:translateY(0);opacity:1}
+
+    /* FOOTER */
+    footer{background:var(--surface);border-top:1px solid var(--border);padding:20px 48px;
+      display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;
+      font-size:.8rem;color:var(--muted)}
+    footer a{color:var(--accent);text-decoration:none}
+    .belarix-bar{background:#080808;border-top:1px solid rgba(255,255,255,.04);
+      padding:10px;text-align:center;font-size:.72rem;color:#555}
+    .belarix-bar a{color:#888;text-decoration:none;transition:color .2s}
+    .belarix-bar a:hover{color:var(--accent)}
+
+    /* RESPONSIVE */
+    @media(max-width:900px){
+      nav{padding:12px 16px}
+      .nav-links{display:none}
+      .burger{display:flex}
+      .page-wrap{padding:24px 16px 48px}
+      .contact-grid{grid-template-columns:1fr}
+      .map-card iframe,.map-card .map-placeholder{min-height:240px}
+      .cb-field{flex-direction:column}
+      .cb-btn{width:100%}
+      footer{padding:16px;flex-direction:column;text-align:center}
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/">АВТО<span>ПАРК</span></a>
+  <ul class="nav-links">
+    <li><a href="/#catalog">Каталог</a></li>
+    <li><a href="/contact" class="active">Контакти</a></li>
+  </ul>
+  <button class="burger" id="burger" onclick="toggleNav()">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="mobile-nav" id="mobileNav">
+  <button class="mobile-nav-close" onclick="toggleNav()">✕</button>
+  <a href="/#catalog" onclick="toggleNav()">Каталог</a>
+  <a href="/contact" onclick="toggleNav()">Контакти</a>
+</div>
+
+<div class="page-wrap">
+  <div class="page-title">Наші <span>контакти</span></div>
+
+  <div class="contact-grid">
+    <!-- Left: contact info -->
+    <div class="info-card">
+      <div class="info-title">Інформація</div>
+
+      <div class="info-row">
+        <div class="info-icon">📞</div>
+        <div>
+          <div class="info-label">Телефон</div>
+          <div class="info-val"><a id="ctPhone" href="tel:+380501234567">+38 (050) 123-45-67</a></div>
+        </div>
+      </div>
+
+      <div class="info-row" id="ctAddrRow" style="display:none">
+        <div class="info-icon">📍</div>
+        <div>
+          <div class="info-label">Адреса</div>
+          <div class="info-val" id="ctAddr">—</div>
+        </div>
+      </div>
+
+      <div class="info-row" id="ctHoursRow" style="display:none">
+        <div class="info-icon">🕐</div>
+        <div>
+          <div class="info-label">Графік роботи</div>
+          <div class="info-val" id="ctHours">—</div>
+        </div>
+      </div>
+
+      <div class="info-row" id="ctEmailRow" style="display:none">
+        <div class="info-icon">✉️</div>
+        <div>
+          <div class="info-label">Email</div>
+          <div class="info-val"><a id="ctEmail" href="#">—</a></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Google Maps -->
+    <div class="map-card" id="mapCard">
+      <div class="map-placeholder">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <div>Завантаження карти…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Callback form -->
+  <div class="callback-card">
+    <div class="cb-title">Передзво<span>ніть мені</span></div>
+    <div class="cb-sub">Залиште номер телефону — ми зателефонуємо вам найближчим часом</div>
+    <div class="cb-field">
+      <input class="cb-input" type="tel" id="cbPhone" placeholder="+380 XX XXX XX XX"
+        onkeydown="if(event.key==='Enter')submitCallback()"/>
+      <button class="cb-btn" id="cbBtn" onclick="submitCallback()">📲 Передзвоніть мені</button>
+    </div>
+    <div class="cb-success" id="cbSuccess">
+      ✅ Запит надіслано! Ми зателефонуємо вам найближчим часом.
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer>
+  <span>© 2024 <a href="/">АВТОПАРК</a>. Всі права захищені.</span>
+  <a href="/">← До каталогу</a>
+</footer>
+<div class="belarix-bar">Зроблено в <a href="https://belarix-agency.com/" target="_blank" rel="noopener">Belarix Agency</a></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script>
+'use strict';
+
+let db;
+
+(async function bootstrap() {
+  const res  = await fetch('/api/config').catch(() => null);
+  const data = res ? await res.json().catch(() => null) : null;
+  if (!res || !res.ok || !data || data.error) { return; }
+
+  firebase.initializeApp(data.firebase);
+  db = firebase.database();
+
+  // Listen to settings in real time
+  db.ref('settings').on('value', snap => {
+    const s = snap.val() || {};
+    applySettings(s);
+  });
+})();
+
+function applySettings(s) {
+  // Phone
+  const phone = (s.phone || '+380501234567').replace(/\s/g, '');
+  const ctPhone = document.getElementById('ctPhone');
+  ctPhone.href = 'tel:' + phone;
+  ctPhone.textContent = s.phone || '+38 (050) 123-45-67';
+
+  // Address
+  if (s.addr) {
+    document.getElementById('ctAddr').textContent = s.addr;
+    document.getElementById('ctAddrRow').style.display = 'flex';
+    buildMap(s.addr);
+  }
+
+  // Hours
+  if (s.hours) {
+    document.getElementById('ctHours').textContent = s.hours;
+    document.getElementById('ctHoursRow').style.display = 'flex';
+  }
+
+  // Email
+  if (s.email) {
+    const el = document.getElementById('ctEmail');
+    el.textContent = s.email;
+    el.href = 'mailto:' + s.email;
+    document.getElementById('ctEmailRow').style.display = 'flex';
+  }
+}
+
+let mapBuilt = false;
+function buildMap(addr) {
+  if (mapBuilt || !addr) return;
+  mapBuilt = true;
+  const card = document.getElementById('mapCard');
+  const q    = encodeURIComponent(addr);
+  card.innerHTML = `<iframe
+    src="https://maps.google.com/maps?q=${q}&output=embed&z=16"
+    loading="lazy"
+    referrerpolicy="no-referrer-when-downgrade"
+    allowfullscreen>
+  </iframe>`;
+}
+
+// Callback form
+async function submitCallback() {
+  const input = document.getElementById('cbPhone');
+  const btn   = document.getElementById('cbBtn');
+  const phone = input.value.trim();
+
+  if (!phone || phone.replace(/\D/g,'').length < 7) {
+    input.classList.add('err');
+    showToast('Введіть коректний номер телефону','error');
+    setTimeout(() => input.classList.remove('err'), 2000);
+    return;
+  }
+
+  if (!db) { showToast('Помилка підключення','error'); return; }
+
+  btn.disabled = true; btn.textContent = '⏳ Надсилаємо…';
+
+  try {
+    await db.ref('callbacks').push({
+      phone,
+      ts:   Date.now(),
+      done: false,
+    });
+    input.value = '';
+    document.getElementById('cbSuccess').style.display = 'block';
+    showToast('✅ Запит надіслано!','success');
+  } catch(e) {
+    showToast('Помилка: ' + e.message,'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📲 Передзвоніть мені';
+  }
+}
+
+function toggleNav() {
+  const nav    = document.getElementById('mobileNav');
+  const burger = document.getElementById('burger');
+  const open   = nav.classList.toggle('open');
+  burger.classList.toggle('open', open);
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = type === 'error' ? 'var(--red)' : 'var(--accent)';
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 3200);
+}
+</script>
+</body>
+</html>

@@ -300,7 +300,28 @@
       .perm-list{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px}
       .perm-row{font-size:.75rem}
 
-      /* ── MOBILE BOTTOM NAV ── */
+      /* ── CALLBACK REQUESTS ── */
+    .cb-list{display:flex;flex-direction:column;gap:2px}
+    .cb-item{display:flex;align-items:center;justify-content:space-between;
+      gap:12px;padding:14px 18px;background:var(--card);border:1px solid var(--border);
+      flex-wrap:wrap;transition:background .2s}
+    .cb-item.done{background:rgba(46,204,113,.06);border-color:rgba(46,204,113,.2)}
+    .cb-phone{font-weight:700;font-size:1rem;color:var(--text);flex:1}
+    .cb-time{font-size:.72rem;color:var(--muted);white-space:nowrap}
+    .cb-acts{display:flex;gap:7px}
+    .cb-btn-done{background:rgba(46,204,113,.15);border:1px solid rgba(46,204,113,.35);
+      color:#2ecc71;padding:6px 14px;font-size:.76rem;font-weight:700;cursor:pointer;
+      font-family:var(--font-body);transition:all .2s;white-space:nowrap}
+    .cb-btn-done:hover{background:rgba(46,204,113,.3)}
+    .cb-btn-del{background:rgba(255,68,68,.1);border:1px solid rgba(255,68,68,.25);
+      color:var(--red);padding:6px 14px;font-size:.76rem;font-weight:700;cursor:pointer;
+      font-family:var(--font-body);transition:all .2s;white-space:nowrap}
+    .cb-btn-del:hover{background:rgba(255,68,68,.25)}
+    @media(max-width:600px){
+      .cb-item{flex-direction:column;align-items:flex-start;gap:8px}
+      .cb-acts{width:100%;justify-content:stretch}
+      .cb-btn-done,.cb-btn-del{flex:1;text-align:center}
+    }
       .mob-nav{
         display:flex;position:fixed;bottom:0;left:0;right:0;z-index:60;
         background:var(--surface);border-top:1px solid var(--border2);
@@ -328,6 +349,13 @@
       .mob-logout{background:none;border:1px solid var(--border2);color:var(--red);
         padding:4px 10px;font-size:.7rem;cursor:pointer;font-family:var(--font-body)}
     }
+
+    .belarix-bar{background:#04040a;border-top:1px solid rgba(255,255,255,.03);
+      padding:8px;text-align:center;font-size:.68rem;color:#444;
+      position:fixed;bottom:0;left:var(--sw);right:0;z-index:30}
+    .belarix-bar a{color:#666;text-decoration:none;transition:color .2s}
+    .belarix-bar a:hover{color:var(--accent)}
+    @media(max-width:900px){.belarix-bar{left:0;bottom:120px}}
 
     /* Desktop: hide mobile nav and mobile cards */
     @media(min-width:901px){
@@ -372,6 +400,11 @@
       <span class="ni-badge" id="carsBadge">—</span>
     </div>
     <div class="sb-group">Система</div>
+    <div class="ni" id="nav-contacts" onclick="showPage('contacts',this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      Зв'язок
+      <span class="ni-badge" id="contactsBadge" style="display:none">0</span>
+    </div>
     <div class="ni" id="nav-admins" onclick="showPage('admins',this)">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       Адміністратори
@@ -511,7 +544,17 @@
       </div>
     </div>
   </div>
+
+  <!-- CONTACTS / CALLBACK -->
+  <div class="page" id="page-contacts">
+    <div class="sec-title" style="margin-bottom:20px">Зв'яз<span>ок</span></div>
+    <div id="callbackList">
+      <div class="no-rows">Завантаження…</div>
+    </div>
+  </div>
 </main>
+
+<div class="belarix-bar">Зроблено в <a href="https://belarix-agency.com/" target="_blank" rel="noopener">Belarix Agency</a></div>
 
 <!-- MOBILE BOTTOM NAV (hidden on desktop via CSS) -->
 <nav class="mob-nav" id="mobNav">
@@ -523,9 +566,9 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect x="9" y="11" width="14" height="10" rx="1"/><circle cx="12" cy="21" r="1"/><circle cx="20" cy="21" r="1"/></svg>
     Авто
   </button>
-  <button class="mob-nav-item" id="mob-admins" onclick="showPage('admins',this);syncMobNav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-    Адміни
+  <button class="mob-nav-item" id="mob-contacts" onclick="showPage('contacts',this);syncMobNav(this)" style="position:relative">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+    Зв'язок
   </button>
   <button class="mob-nav-item" id="mob-settings" onclick="showPage('settings',this);syncMobNav(this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -968,6 +1011,18 @@ function startListeners() {
     loadSettingsForm();
   });
   _listeners.push({ ref: settingsRef });
+
+  // CALLBACKS (дзвінки)
+  const cbRef = db.ref('callbacks');
+  cbRef.on('value', function(snap) {
+    CALLBACKS = snap.val() || {};
+    updateContactsBadge();
+    // Re-render if contacts page is currently open
+    if (document.getElementById('page-contacts')?.classList.contains('active')) {
+      renderCallbacks();
+    }
+  });
+  _listeners.push({ ref: cbRef });
 }
 
 function stopListeners() {
@@ -987,7 +1042,6 @@ function syncMobNav(el) {
 }
 
 async function showPage(id, el) {
-  // Verify from DB for protected pages
   if (id === 'settings') { if (!(await verifyPerm('canSettings'))) return; }
   if (id === 'admins')   { if (!(await verifyPerm('canAdmins')))   return; }
 
@@ -995,10 +1049,10 @@ async function showPage(id, el) {
   document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   if (el) el.classList.add('active');
-  const titles = {dashboard:'ДАШБОРД', cars:'КАТАЛОГ АВТ', admins:'АДМІНІСТРАТОРИ', settings:'НАЛАШТУВАННЯ'};
+  const titles = {dashboard:'ДАШБОРД', cars:'КАТАЛОГ АВТ', admins:'АДМІНІСТРАТОРИ', settings:'НАЛАШТУВАННЯ', contacts:'ЗВ\'ЯЗОК'};
   document.getElementById('tbTitle').textContent = titles[id] || '';
   if (id === 'dashboard') { updateStats(); renderActivity(); }
-  // Sync mobile nav
+  if (id === 'contacts')  { renderCallbacks(); }
   syncMobNav(document.getElementById('mob-' + id));
 }
 
@@ -1010,10 +1064,66 @@ function navTo(id) {
   const nav  = document.getElementById('nav-' + id);
   if (page) page.classList.add('active');
   if (nav)  nav.classList.add('active');
-  const titles = {dashboard:'ДАШБОРД', cars:'КАТАЛОГ АВТ', admins:'АДМІНІСТРАТОРИ', settings:'НАЛАШТУВАННЯ'};
+  const titles = {dashboard:'ДАШБОРД', cars:'КАТАЛОГ АВТ', admins:'АДМІНІСТРАТОРИ', settings:'НАЛАШТУВАННЯ', contacts:'ЗВ\'ЯЗОК'};
   document.getElementById('tbTitle').textContent = titles[id] || '';
   if (id === 'dashboard') { updateStats(); renderActivity(); }
+  if (id === 'contacts')  { renderCallbacks(); }
   syncMobNav(document.getElementById('mob-' + id));
+}
+
+// ═══════════════════════════════════════════
+//  CALLBACK REQUESTS
+// ═══════════════════════════════════════════
+let CALLBACKS = {};
+
+function renderCallbacks() {
+  const list = document.getElementById('callbackList');
+  if (!list) return;
+  const entries = Object.entries(CALLBACKS).sort((a,b) => (b[1].ts||0) - (a[1].ts||0));
+  if (!entries.length) {
+    list.innerHTML = '<div class="no-rows" style="padding:40px;text-align:center;color:var(--muted)">Поки що немає запитів</div>';
+    return;
+  }
+  list.innerHTML = '<div class="cb-list">' + entries.map(([key, r]) => {
+    const done = r.done ? ' done' : '';
+    const t    = r.ts ? new Date(r.ts).toLocaleString('uk-UA',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+    return '<div class="cb-item' + done + '" id="cb-' + key + '">' +
+      '<div>' +
+        '<div class="cb-phone">' + (r.phone || '—') + '</div>' +
+        '<div class="cb-time">' + t + '</div>' +
+      '</div>' +
+      '<div class="cb-acts">' +
+        '<button class="cb-btn-done" onclick="cbDone(\'' + key + '\')">' + (r.done ? '✓ Виконано' : 'Готово') + '</button>' +
+        '<button class="cb-btn-del"  onclick="cbDelete(\'' + key + '\')">Видалити</button>' +
+      '</div>' +
+    '</div>';
+  }).join('') + '</div>';
+}
+
+async function cbDone(key) {
+  try {
+    await db.ref('callbacks/' + key + '/done').set(true);
+    showToast('Позначено як виконано ✓','success');
+  } catch(e) { showToast('Помилка: '+e.message,'error'); }
+}
+
+async function cbDelete(key) {
+  try {
+    await db.ref('callbacks/' + key).remove();
+    showToast('Запит видалено','info');
+  } catch(e) { showToast('Помилка: '+e.message,'error'); }
+}
+
+function updateContactsBadge() {
+  const pending = Object.values(CALLBACKS).filter(r => !r.done).length;
+  const badge   = document.getElementById('contactsBadge');
+  if (!badge) return;
+  if (pending > 0) {
+    badge.textContent = pending;
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
 }
 function updateStats() {
   document.getElementById('s-total').textContent = CARS.length;

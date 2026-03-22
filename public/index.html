@@ -183,6 +183,9 @@
     .footer-col a{color:var(--muted);text-decoration:none;font-size:.88rem;transition:color .2s}
     .footer-col a:hover{color:var(--text)}
     .footer-bottom{background:var(--surface);border-top:1px solid var(--border);padding:16px 48px;display:flex;align-items:center;justify-content:space-between;font-size:.78rem;color:var(--muted)}
+    .belarix-bar{background:#080808;border-top:1px solid rgba(255,255,255,.04);padding:10px;text-align:center;font-size:.72rem;color:#555}
+    .belarix-bar a{color:#888;text-decoration:none;transition:color .2s}
+    .belarix-bar a:hover{color:var(--accent)}
 
     /* RESPONSIVE */
     @media(max-width:900px){
@@ -260,9 +263,7 @@
   <div class="nav-logo">АВТО<span>ПАРК</span></div>
   <ul class="nav-links">
     <li><a href="#catalog">Каталог</a></li>
-    <li><a href="#">Кредит</a></li>
-    <li><a href="#">Trade-in</a></li>
-    <li><a href="#">Контакти</a></li>
+    <li><a href="/contact">Контакти</a></li>
   </ul>
   <button class="nav-cta" onclick="scrollToCatalog()">Підібрати авто</button>
   <button class="burger" id="burger" onclick="toggleMobileNav()">
@@ -273,9 +274,7 @@
 <div class="mobile-nav" id="mobileNav">
   <button class="mobile-nav-close" onclick="toggleMobileNav()">✕</button>
   <a href="#catalog" onclick="toggleMobileNav()">Каталог</a>
-  <a href="#" onclick="toggleMobileNav()">Кредит</a>
-  <a href="#" onclick="toggleMobileNav()">Trade-in</a>
-  <a href="#" onclick="toggleMobileNav()">Контакти</a>
+  <a href="/contact" onclick="toggleMobileNav()">Контакти</a>
   <button class="mn-btn mn-cta" onclick="scrollToCatalog();toggleMobileNav()">Підібрати авто</button>
 </div>
 
@@ -436,6 +435,7 @@
   <span>© 2024 АВТОПАРК. Всі права захищені.</span>
   <span>Ліцензія на торгівлю ТЗ №UA-2024-001</span>
 </div>
+<div class="belarix-bar">Зроблено в <a href="https://belarix-agency.com/" target="_blank" rel="noopener">Belarix Agency</a></div>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>

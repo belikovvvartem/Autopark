@@ -1,7 +1,8 @@
 {
     "version": 2,
     "rewrites": [
-      { "source": "/admin",     "destination": "/admin.html" },
-      { "source": "/car/:slug", "destination": "/car.html"   }
+      { "source": "/admin",     "destination": "/admin.html"   },
+      { "source": "/contact",   "destination": "/contact.html" },
+      { "source": "/car/:slug", "destination": "/car.html"     }
     ]
   }

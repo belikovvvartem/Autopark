@@ -47,23 +47,21 @@
     #carPage{display:none;max-width:1100px;margin:0 auto;padding:40px 24px 80px}
 
     /* ── GALLERY ── */
-    /* Desktop: big main photo left, column of thumbs right */
-    .gallery{display:grid;grid-template-columns:1fr 160px;gap:8px;margin-bottom:40px;align-items:start}
+    /* Desktop: big main photo on top, horizontal thumb strip below */
+    .gallery{display:flex;flex-direction:column;gap:8px;margin-bottom:40px}
     .gallery-main{position:relative;overflow:hidden;background:#0a0a0f;
-      aspect-ratio:16/10;cursor:zoom-in;grid-row:1}
+      aspect-ratio:16/9;cursor:zoom-in;width:100%}
     .gallery-main img{width:100%;height:100%;object-fit:cover;display:block}
-    /* Vertical thumb strip */
-    .gallery-thumbs{display:flex;flex-direction:column;gap:6px;grid-row:1}
-    .gallery-thumb{overflow:hidden;cursor:pointer;opacity:.55;transition:opacity .2s;
-      aspect-ratio:4/3;flex-shrink:0;position:relative}
+    /* Horizontal thumb strip below */
+    .gallery-thumbs{display:flex;flex-direction:row;gap:6px;overflow-x:auto;
+      -webkit-overflow-scrolling:touch;padding-bottom:2px}
+    .gallery-thumb{flex-shrink:0;width:120px;height:80px;overflow:hidden;
+      cursor:pointer;opacity:.55;transition:opacity .2s}
     .gallery-thumb:hover,.gallery-thumb.active{opacity:1;outline:2px solid var(--accent)}
     .gallery-thumb img{width:100%;height:100%;object-fit:cover;display:block}
-    .gallery-more{display:flex;align-items:center;justify-content:center;
-      background:rgba(0,0,0,.75);position:relative}
-    .gallery-more::after{content:attr(data-label);position:absolute;
-      font-family:var(--font-display);font-size:1rem;letter-spacing:1px;color:#fff}
-    .gallery-more img{opacity:.25}
-    .gallery-more:hover{outline-color:var(--accent)}
+    .gallery-more{position:relative;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6)}
+    .gallery-more::after{content:attr(data-label);position:absolute;font-family:var(--font-display);font-size:1.1rem;letter-spacing:1px;color:#fff}
+    .gallery-more img{opacity:.2}
 
     /* Slider arrows */
     .gal-arr{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.55);
@@ -160,22 +158,21 @@
       transition:all .35s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
     .toast.show{transform:translateY(0);opacity:1}
 
-    /* FOOTER */
     .page-footer{background:var(--surface);border-top:1px solid var(--border);
       padding:24px 48px;display:flex;justify-content:space-between;align-items:center;
       flex-wrap:wrap;gap:12px;font-size:.82rem;color:var(--muted)}
     .page-footer a{color:var(--accent);text-decoration:none}
+    .belarix-bar{background:#080808;border-top:1px solid rgba(255,255,255,.04);
+      padding:10px;text-align:center;font-size:.72rem;color:#555}
+    .belarix-bar a{color:#888;text-decoration:none;transition:color .2s}
+    .belarix-bar a:hover{color:var(--accent)}
 
     /* RESPONSIVE */
     @media(max-width:900px){
       nav{padding:12px 16px}
       #carPage{padding:16px 14px 80px}
-      /* Mobile gallery: big photo on top, thumbs horizontal strip below */
-      .gallery{grid-template-columns:1fr;gap:6px}
-      .gallery-main{aspect-ratio:16/9;grid-row:1}
-      .gallery-thumbs{flex-direction:row;grid-row:2;overflow-x:auto;
-        -webkit-overflow-scrolling:touch;gap:5px;padding-bottom:2px}
-      .gallery-thumb{flex-shrink:0;width:80px;height:58px;aspect-ratio:unset}
+      .gallery-main{aspect-ratio:16/9}
+      .gallery-thumb{width:78px;height:54px}
       .specs-grid{grid-template-columns:1fr 1fr}
       .car-header{flex-direction:column;gap:10px}
       .car-header-right{text-align:left}
@@ -185,6 +182,7 @@
     }
     @media(max-width:480px){
       .specs-grid{grid-template-columns:1fr 1fr}
+      .gallery-thumb{width:64px;height:44px}
     }
   </style>
 </head>
@@ -282,6 +280,7 @@
   <span>© 2024 <a href="/">АВТОПАРК</a>. Всі права захищені.</span>
   <a href="/#catalog">← До каталогу</a>
 </footer>
+<div class="belarix-bar">Зроблено в <a href="https://belarix-agency.com/" target="_blank" rel="noopener">Belarix Agency</a></div>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
