@@ -17,7 +17,8 @@ module.exports = function handler(req, res) {
         messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || null,
         appId:             process.env.FIREBASE_APP_ID             || null,
       },
-      r2PublicBase: process.env.R2_PUBLIC_BASE || null,
+      r2PublicBase:      process.env.R2_PUBLIC_BASE      || null,
+      telegramUsername:  process.env.TELEGRAM_USERNAME   || null,
     };
   
     // Check that critical vars are set

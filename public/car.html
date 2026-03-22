@@ -46,31 +46,36 @@
     /* MAIN LAYOUT */
     #carPage{display:none;max-width:1100px;margin:0 auto;padding:40px 24px 80px}
 
-    /* GALLERY */
-    .gallery{display:grid;grid-template-columns:1fr 380px;gap:10px;margin-bottom:40px}
-    .gallery-main{position:relative;overflow:hidden;background:#0a0a0f;aspect-ratio:16/10;cursor:zoom-in}
+    /* ── GALLERY ── */
+    /* Desktop: big main photo left, column of thumbs right */
+    .gallery{display:grid;grid-template-columns:1fr 160px;gap:8px;margin-bottom:40px;align-items:start}
+    .gallery-main{position:relative;overflow:hidden;background:#0a0a0f;
+      aspect-ratio:16/10;cursor:zoom-in;grid-row:1}
     .gallery-main img{width:100%;height:100%;object-fit:cover;display:block}
-    .gallery-thumbs{display:grid;grid-template-rows:repeat(3,1fr);gap:6px;overflow:hidden}
-    .gallery-thumb{overflow:hidden;cursor:pointer;opacity:.65;transition:opacity .2s;aspect-ratio:16/10}
-    .gallery-thumb:hover,.gallery-thumb.active{opacity:1}
+    /* Vertical thumb strip */
+    .gallery-thumbs{display:flex;flex-direction:column;gap:6px;grid-row:1}
+    .gallery-thumb{overflow:hidden;cursor:pointer;opacity:.55;transition:opacity .2s;
+      aspect-ratio:4/3;flex-shrink:0;position:relative}
+    .gallery-thumb:hover,.gallery-thumb.active{opacity:1;outline:2px solid var(--accent)}
     .gallery-thumb img{width:100%;height:100%;object-fit:cover;display:block}
-    .gallery-more{display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);
-      font-family:var(--font-display);font-size:1.2rem;letter-spacing:2px;color:var(--text);cursor:pointer}
-    .gallery-more:hover{background:rgba(232,200,74,.2);color:var(--accent)}
+    .gallery-more{display:flex;align-items:center;justify-content:center;
+      background:rgba(0,0,0,.75);position:relative}
+    .gallery-more::after{content:attr(data-label);position:absolute;
+      font-family:var(--font-display);font-size:1rem;letter-spacing:1px;color:#fff}
+    .gallery-more img{opacity:.25}
+    .gallery-more:hover{outline-color:var(--accent)}
 
-    /* Slider arrows on main image */
+    /* Slider arrows */
     .gal-arr{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.55);
       border:1px solid rgba(255,255,255,.15);color:#fff;width:44px;height:44px;
       display:flex;align-items:center;justify-content:center;cursor:pointer;
       font-size:1.8rem;transition:all .2s;z-index:2;backdrop-filter:blur(4px)}
     .gal-arr:hover{background:rgba(232,200,74,.7);color:#000}
-    .gal-arr.left{left:12px}
-    .gal-arr.right{right:12px}
+    .gal-arr.left{left:12px}.gal-arr.right{right:12px}
 
     /* CAR HEADER */
     .car-header{display:flex;justify-content:space-between;align-items:flex-start;
       gap:24px;flex-wrap:wrap;margin-bottom:32px}
-    .car-header-left{}
     .car-category{font-size:.7rem;text-transform:uppercase;letter-spacing:2px;
       color:var(--accent);font-weight:700;margin-bottom:6px}
     .car-title{font-family:var(--font-display);font-size:clamp(2.5rem,6vw,4rem);
@@ -85,20 +90,27 @@
       color:var(--accent);letter-spacing:2px;line-height:1}
     .car-price-note{font-size:.72rem;color:var(--muted);margin-top:4px}
 
-    /* SPECS GRID */
-    .specs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+    /* SPECS */
+    .specs-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
       background:var(--border);border:1px solid var(--border);margin-bottom:32px}
     .spec-cell{background:var(--surface);padding:16px 18px}
     .spec-cell-key{font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;
       color:var(--muted);margin-bottom:5px}
     .spec-cell-val{font-weight:700;font-size:1rem;color:var(--text)}
 
-    /* DESCRIPTION */
+    /* DESCRIPTION with truncation */
     .section-title{font-family:var(--font-display);font-size:1.6rem;letter-spacing:2px;
       margin-bottom:14px;color:var(--text)}
     .section-title span{color:var(--accent)}
+    .desc-wrap{position:relative;margin-bottom:32px}
     .car-desc{color:var(--muted);font-size:.95rem;line-height:1.8;
-      white-space:pre-wrap;word-break:break-word;margin-bottom:32px}
+      white-space:pre-wrap;word-break:break-word}
+    .car-desc.clamped{display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;
+      overflow:hidden;white-space:normal}
+    .btn-read-more{margin-top:10px;background:none;border:1px solid var(--border);
+      color:var(--muted);padding:7px 18px;font-family:var(--font-body);font-size:.8rem;
+      cursor:pointer;transition:all .2s;letter-spacing:1px;text-transform:uppercase}
+    .btn-read-more:hover{border-color:var(--accent);color:var(--accent)}
 
     /* ACTION BUTTONS */
     .actions-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:40px}
@@ -139,8 +151,7 @@
       border-radius:50%;display:flex;align-items:center;justify-content:center;
       cursor:pointer;font-size:2rem;transition:background .2s}
     .lb-arr:hover{background:rgba(232,200,74,.4);border-color:var(--accent)}
-    .lb-arr.left{left:18px}
-    .lb-arr.right{right:18px}
+    .lb-arr.left{left:18px}.lb-arr.right{right:18px}
 
     /* TOAST */
     .toast{position:fixed;bottom:28px;right:28px;z-index:300;background:var(--card);
@@ -158,21 +169,22 @@
     /* RESPONSIVE */
     @media(max-width:900px){
       nav{padding:12px 16px}
-      #carPage{padding:20px 16px 80px}
-      .gallery{grid-template-columns:1fr;grid-template-rows:auto auto}
-      .gallery-thumbs{grid-template-rows:none;grid-template-columns:repeat(4,1fr);gap:5px}
-      .gallery-thumb{aspect-ratio:4/3}
-      .gallery-main{aspect-ratio:16/10}
-      .car-header{flex-direction:column;gap:12px}
+      #carPage{padding:16px 14px 80px}
+      /* Mobile gallery: big photo on top, thumbs horizontal strip below */
+      .gallery{grid-template-columns:1fr;gap:6px}
+      .gallery-main{aspect-ratio:16/9;grid-row:1}
+      .gallery-thumbs{flex-direction:row;grid-row:2;overflow-x:auto;
+        -webkit-overflow-scrolling:touch;gap:5px;padding-bottom:2px}
+      .gallery-thumb{flex-shrink:0;width:80px;height:58px;aspect-ratio:unset}
+      .specs-grid{grid-template-columns:1fr 1fr}
+      .car-header{flex-direction:column;gap:10px}
       .car-header-right{text-align:left}
-      .specs-grid{grid-template-columns:repeat(2,1fr)}
       .actions-row{flex-direction:column}
       .btn-call,.btn-tg,.btn-share,.btn-video{width:100%;justify-content:center}
       .page-footer{padding:18px 16px;flex-direction:column;text-align:center}
     }
     @media(max-width:480px){
       .specs-grid{grid-template-columns:1fr 1fr}
-      .gallery-thumbs{grid-template-columns:repeat(3,1fr)}
     }
   </style>
 </head>
@@ -180,7 +192,7 @@
 
 <nav>
   <a class="nav-logo" href="/">АВТО<span>ПАРК</span></a>
-  <a class="back-btn" href="/">
+  <a class="back-btn" href="/#catalog">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
     До каталогу
   </a>
@@ -230,7 +242,12 @@
   <!-- Description -->
   <div id="descSection" style="display:none">
     <div class="section-title">Опис <span>авто</span></div>
-    <div class="car-desc" id="carDesc"></div>
+    <div class="desc-wrap">
+      <div class="car-desc clamped" id="carDesc"></div>
+      <button class="btn-read-more" id="btnReadMore" onclick="toggleDesc()" style="display:none">
+        Показати повністю ↓
+      </button>
+    </div>
   </div>
 
   <!-- Actions -->
@@ -263,7 +280,7 @@
 
 <footer class="page-footer">
   <span>© 2024 <a href="/">АВТОПАРК</a>. Всі права захищені.</span>
-  <a href="/">← Повернутись до каталогу</a>
+  <a href="/#catalog">← До каталогу</a>
 </footer>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -272,17 +289,16 @@
 'use strict';
 
 let db;
-let CAR     = null;
-let PHOTOS  = [];
-let galIdx  = 0;
-let lbIdx   = 0;
+let CAR      = null;
+let PHOTOS   = [];
+let galIdx   = 0;
+let lbIdx    = 0;
 let SETTINGS = {};
+let TG_USERNAME = ''; // from Vercel env var TELEGRAM_USERNAME
 
 // ── Extract Firebase key from URL slug ──
-// URL format: /car/BMW_X5_2023_-OLabcDef123
 function keyFromSlug() {
-  const slug = location.pathname.replace('/car/', '').trim();
-  // Firebase keys start with '-' and are alphanumeric
+  const slug  = location.pathname.replace('/car/', '').trim();
   const match = slug.match(/(-[A-Za-z0-9_-]+)$/);
   return match ? match[1] : null;
 }
@@ -291,17 +307,20 @@ function keyFromSlug() {
 (async function bootstrap() {
   const res  = await fetch('/api/config').catch(() => null);
   const data = res ? await res.json().catch(() => null) : null;
-  if (!res || !res.ok || !data || data.error) {
-    showError(); return;
-  }
+  if (!res || !res.ok || !data || data.error) { showError(); return; }
+
+  // Get Telegram username from env var (served by /api/config)
+  TG_USERNAME = data.telegramUsername || '';
+
   firebase.initializeApp(data.firebase);
   db = firebase.database();
 
-  // Load settings for phone + telegram
   const settSnap = await db.ref('settings').once('value').catch(() => null);
   SETTINGS = settSnap?.val() || {};
 
-  // Load car
+  // Telegram username: env var takes priority, fallback to settings DB field
+  if (!TG_USERNAME) TG_USERNAME = SETTINGS.telegram || '';
+
   const key = keyFromSlug();
   if (!key) { showError(); return; }
 
@@ -309,9 +328,9 @@ function keyFromSlug() {
   const car  = snap?.val();
   if (!car) { showError(); return; }
 
-  CAR    = car;
+  CAR      = car;
   CAR._key = key;
-  PHOTOS = Array.isArray(car.photos) && car.photos.length ? car.photos : (car.img ? [car.img] : []);
+  PHOTOS   = Array.isArray(car.photos) && car.photos.length ? car.photos : (car.img ? [car.img] : []);
   renderPage();
 })();
 
@@ -356,10 +375,18 @@ function renderPage() {
     `<div class="spec-cell"><div class="spec-cell-key">${k}</div><div class="spec-cell-val">${v}</div></div>`
   ).join('');
 
-  // Description
+  // Description with truncation
   if (c.desc && c.desc.trim()) {
+    const descEl = document.getElementById('carDesc');
+    const btnRM  = document.getElementById('btnReadMore');
     document.getElementById('descSection').style.display = 'block';
-    document.getElementById('carDesc').textContent = c.desc;
+    descEl.textContent = c.desc;
+    // Show "read more" only if text is long (> ~300 chars or > 5 lines worth)
+    if (c.desc.length > 300 || c.desc.split('\n').length > 5) {
+      btnRM.style.display = 'inline-block';
+    } else {
+      descEl.classList.remove('clamped'); // short — show fully
+    }
   }
 
   // Gallery
@@ -369,13 +396,13 @@ function renderPage() {
   const phone = (SETTINGS.phone || '+380501234567').replace(/\s/g, '');
   document.getElementById('btnCall').href = 'tel:' + phone;
 
-  // Telegram button
-  const tgUser = SETTINGS.telegram || '';
+  // Telegram button — opens chat with admin, message pre-filled
   const pageUrl = location.href;
   const tgText  = encodeURIComponent(`Доброго дня! Мене цікавить ${title}.\n${pageUrl}`);
-  if (tgUser) {
-    document.getElementById('btnTg').href = `https://t.me/${tgUser}?text=${tgText}`;
+  if (TG_USERNAME) {
+    document.getElementById('btnTg').href = `https://t.me/${TG_USERNAME}?text=${tgText}`;
   } else {
+    // No username — use generic tg: deep link (opens Telegram without a recipient)
     document.getElementById('btnTg').href = `tg://msg?text=${tgText}`;
   }
 
@@ -391,48 +418,63 @@ function renderPage() {
   document.getElementById('carPage').style.display      = 'block';
 }
 
+// ── Description toggle ───────────────────
+let descExpanded = false;
+function toggleDesc() {
+  const el  = document.getElementById('carDesc');
+  const btn = document.getElementById('btnReadMore');
+  descExpanded = !descExpanded;
+  el.classList.toggle('clamped', !descExpanded);
+  btn.textContent = descExpanded ? 'Приховати ↑' : 'Показати повністю ↓';
+}
+
 // ── Gallery ──────────────────────────────
 function buildGallery() {
   const mainImg = document.getElementById('galMainImg');
   const thumbs  = document.getElementById('galThumbs');
   const galMain = document.getElementById('galMain');
+  const arrL    = galMain.querySelector('.gal-arr.left');
+  const arrR    = galMain.querySelector('.gal-arr.right');
 
   if (!PHOTOS.length) {
     mainImg.src = 'https://placehold.co/900x560/15151c/555?text=🚗';
     thumbs.style.display = 'none';
-    document.querySelector('.gal-arr.left').style.display  = 'none';
-    document.querySelector('.gal-arr.right').style.display = 'none';
+    arrL.style.display = arrR.style.display = 'none';
     galMain.style.cursor = 'default';
     return;
   }
 
-  // Hide arrows if only 1 photo
-  const hasMulti = PHOTOS.length > 1;
-  document.querySelector('.gal-arr.left').style.display  = hasMulti ? '' : 'none';
-  document.querySelector('.gal-arr.right').style.display = hasMulti ? '' : 'none';
-
   setMainPhoto(0);
 
-  // Build thumbs (max 4, last one shows "+N more" if needed)
-  const maxThumbs = 4;
-  const shown = PHOTOS.slice(0, maxThumbs);
-  const extra = PHOTOS.length - maxThumbs;
+  const hasMulti = PHOTOS.length > 1;
+  arrL.style.display = arrR.style.display = hasMulti ? '' : 'none';
 
+  if (!hasMulti) {
+    thumbs.style.display = 'none';
+    return;
+  }
+
+  // Build thumb strip — show all photos
   thumbs.innerHTML = '';
+  const MAX_THUMBS = 6;
+  const shown = PHOTOS.slice(0, MAX_THUMBS);
+  const extra = PHOTOS.length - MAX_THUMBS;
+
   shown.forEach((url, i) => {
     const div = document.createElement('div');
-    div.className = 'gallery-thumb' + (i === 0 ? ' active' : '');
-    if (i === maxThumbs - 1 && extra > 0) {
-      div.className += ' gallery-more';
-      div.innerHTML = `<img src="${url}" style="opacity:.3"/><span>+${extra + 1}</span>`;
-    } else {
-      div.innerHTML = `<img src="${url}" onerror="this.src='https://placehold.co/200x130/15151c/555?text=🚗'" alt=""/>`;
+    const isLastExtra = (i === MAX_THUMBS - 1 && extra > 0);
+    div.className = 'gallery-thumb' + (i === 0 ? ' active' : '') + (isLastExtra ? ' gallery-more' : '');
+    if (isLastExtra) {
+      div.setAttribute('data-label', '+' + (extra + 1));
     }
-    div.onclick = () => { setMainPhoto(i); openLightbox(i); };
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = '';
+    img.onerror = function(){ this.style.opacity = '.2'; };
+    div.appendChild(img);
+    div.onclick = () => { setMainPhoto(i); };
     thumbs.appendChild(div);
   });
-
-  if (!hasMulti) thumbs.style.display = 'none';
 }
 
 function setMainPhoto(idx) {

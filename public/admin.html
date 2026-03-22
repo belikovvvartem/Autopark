@@ -245,35 +245,43 @@
       .main{margin-left:0}
 
       /* Mobile topbar */
-      .topbar{
-        height:56px;padding:0 12px;gap:8px;
-        position:sticky;top:0;
-      }
+      .topbar{height:56px;padding:0 12px;gap:8px;position:sticky;top:0}
       .tb-title{font-size:1.1rem}
-      .tb-search{width:110px;padding:6px 10px;font-size:.78rem}
-      .btn-add{padding:7px 12px;font-size:.75rem}
+      .tb-search{width:100px;padding:6px 9px;font-size:.76rem}
+      .btn-add{padding:7px 12px;font-size:.74rem}
       .tb-link{display:none}
 
       /* Pages */
-      .page{padding:14px 14px 80px}
+      .page{padding:12px 12px 80px}
 
       /* Stats — 2 col */
       .stats-row{grid-template-columns:1fr 1fr;gap:2px}
-      .sc{padding:14px}
-      .sc-val{font-size:1.8rem}
+      .sc{padding:12px}
+      .sc-val{font-size:1.6rem}
+      .sc-icon{font-size:1rem;margin-bottom:4px}
 
       /* Dash grid — single col */
-      .dash-grid{grid-template-columns:1fr;gap:14px;margin-top:14px}
+      .dash-grid{grid-template-columns:1fr;gap:12px;margin-top:12px}
 
-      /* Table — horizontal scroll */
+      /* ── CARS TABLE → CARD VIEW ON MOBILE ── */
       .tw{overflow:hidden}
       .tf{padding:10px 12px;gap:7px;flex-wrap:wrap}
       .tfi{font-size:.76rem;padding:6px 8px}
-      .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-      table{min-width:600px}
-      th,td{padding:9px 10px;font-size:.78rem}
-      .td-acts{gap:3px;flex-wrap:nowrap}
-      .ab{padding:3px 6px;font-size:.65rem}
+      /* Hide desktop table, show mobile cards */
+      .table-wrap table{display:none}
+      .mob-cards{display:flex;flex-direction:column;gap:2px}
+      .mob-car-card{background:var(--card);border:1px solid var(--border);padding:12px}
+      .mob-car-top{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px}
+      .mob-car-img{width:72px;height:52px;object-fit:cover;flex-shrink:0;filter:brightness(.9)}
+      .mob-car-info{flex:1;min-width:0}
+      .mob-car-name{font-weight:700;font-size:.9rem;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .mob-car-sub{font-size:.72rem;color:var(--muted);margin-bottom:4px}
+      .mob-car-price{font-family:var(--font-display);font-size:1.1rem;color:var(--accent)}
+      .mob-car-acts{display:flex;gap:6px}
+      .mob-car-acts .ab{flex:1;text-align:center;padding:7px 4px;font-size:.72rem}
+
+      /* No-rows message */
+      .no-rows{padding:28px;font-size:.85rem}
 
       /* Drawer — full screen */
       .drawer{width:100%;max-width:100%}
@@ -283,11 +291,14 @@
       .fg{grid-template-columns:1fr}
       .set-grid{grid-template-columns:1fr}
 
-      /* Admins grid — single col */
-      .admins-grid{grid-template-columns:1fr}
-
-      /* Stats cards — smaller */
-      .sc-icon{font-size:1rem;margin-bottom:6px}
+      /* ── ADMINS GRID MOBILE ── */
+      .admins-grid{grid-template-columns:1fr;gap:2px}
+      .admin-card{padding:14px}
+      .acard-av{width:36px;height:36px;font-size:1rem;margin-bottom:8px}
+      .acard-name{font-size:.9rem}
+      /* Permissions as compact 2-col grid */
+      .perm-list{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px}
+      .perm-row{font-size:.75rem}
 
       /* ── MOBILE BOTTOM NAV ── */
       .mob-nav{
@@ -318,9 +329,10 @@
         padding:4px 10px;font-size:.7rem;cursor:pointer;font-family:var(--font-body)}
     }
 
-    /* Desktop: hide mobile nav */
+    /* Desktop: hide mobile nav and mobile cards */
     @media(min-width:901px){
       .mob-nav,.mob-user{display:none!important}
+      .mob-cards{display:none!important}
     }
   </style>
 </head>
@@ -450,6 +462,8 @@
             <tr><td colspan="9"><div style="padding:20px"><div class="skel" style="height:14px;width:70%;margin-bottom:10px"></div><div class="skel" style="height:14px;width:50%"></div></div></td></tr>
           </tbody>
         </table>
+        <!-- Mobile card view (desktop table hidden via CSS on mobile) -->
+        <div class="mob-cards" id="mobCards"></div>
         <div class="no-rows" id="noRows" style="display:none">Нічого не знайдено</div>
       </div>
     </div>
@@ -1159,8 +1173,57 @@ function renderTable() {
 
     tdActs.appendChild(divActs);
     tr.appendChild(tdActs);
-
     tbody.appendChild(tr);
+  }
+
+  // ── Mobile card view ──
+  const mobCards = document.getElementById('mobCards');
+  if (mobCards) {
+    mobCards.innerHTML = '';
+    const sBadgeMob = { available:'В наявності', reserved:'Зарезервовано', sold:'Продано' };
+    const sBadgeClsMob = { available:'ba', reserved:'br', sold:'bs' };
+    list.forEach(function(c) {
+      var card = document.createElement('div');
+      card.className = 'mob-car-card';
+
+      var top = document.createElement('div');
+      top.className = 'mob-car-top';
+
+      var img = document.createElement('img');
+      img.className = 'mob-car-img';
+      img.src = c.img || 'https://placehold.co/72x52/13131e/555?text=🚗';
+      img.onerror = function(){ this.src = 'https://placehold.co/72x52/13131e/555?text=🚗'; };
+      top.appendChild(img);
+
+      var info = document.createElement('div');
+      info.className = 'mob-car-info';
+      info.innerHTML =
+        '<div class="mob-car-name">' + (c.brand||'—') + ' ' + (c.model||'—') + '</div>' +
+        '<div class="mob-car-sub">' + (c.year||'') + (c.engine ? ' · ' + c.engine : '') + '</div>' +
+        '<div class="mob-car-price">$' + Number(c.price||0).toLocaleString() + '</div>' +
+        (c.status ? '<span class="badge ' + (sBadgeClsMob[c.status]||'') + '" style="margin-top:4px;display:inline-block">' + (sBadgeMob[c.status]||'') + '</span>' : '');
+      top.appendChild(info);
+      card.appendChild(top);
+
+      var acts = document.createElement('div');
+      acts.className = 'mob-car-acts';
+
+      var bE = document.createElement('button');
+      bE.className = 'ab'; bE.textContent = '✏️ Ред.'; bE.disabled = !cE;
+      (function(key){ bE.onclick = async function(){ if(await verifyPerm('canEdit')) editCar(key); }; })(c._key);
+
+      var bS = document.createElement('button');
+      bS.className = 'ab cyc'; bS.textContent = '↻ Статус'; bS.disabled = !cS;
+      (function(key){ bS.onclick = async function(){ if(await verifyPerm('canStatus')) cycleStatus(key); }; })(c._key);
+
+      var bD = document.createElement('button');
+      bD.className = 'ab del'; bD.textContent = '🗑 Видалити'; bD.disabled = !cD;
+      (function(key){ bD.onclick = async function(){ if(await verifyPerm('canDelete')) askDelete(key); }; })(c._key);
+
+      acts.appendChild(bE); acts.appendChild(bS); acts.appendChild(bD);
+      card.appendChild(acts);
+      mobCards.appendChild(card);
+    });
   }
 }
 
