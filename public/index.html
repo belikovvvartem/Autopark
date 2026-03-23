@@ -144,7 +144,15 @@
     .modal-brand{font-size:.72rem;text-transform:uppercase;letter-spacing:2px;color:var(--accent);font-weight:700;margin-bottom:6px}
     .modal-name{font-family:var(--font-display);font-size:3rem;letter-spacing:2px;margin-bottom:8px}
     /* white-space:pre-wrap preserves line breaks and spaces in description */
-    .modal-desc{color:var(--muted);font-size:.92rem;line-height:1.7;margin-bottom:28px;white-space:pre-wrap;word-break:break-word}
+    .modal-desc{color:var(--muted);font-size:.92rem;line-height:1.7;white-space:pre-wrap;word-break:break-word;overflow:hidden;transition:max-height .4s ease;max-height:200px}
+    .modal-desc.expanded{max-height:2000px}
+    .modal-desc-toggle{background:none;border:none;color:var(--accent);font-size:.8rem;font-weight:700;cursor:pointer;padding:0 0 20px;text-transform:uppercase;letter-spacing:1px;display:none}
+    .modal-desc-toggle:hover{color:#f5d55c}
+    /* Share button on card */
+    .btn-share-card{background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--muted);
+      width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+      cursor:pointer;transition:all .2s;flex-shrink:0}
+    .btn-share-card:hover{border-color:var(--accent);color:var(--accent);background:rgba(232,200,74,.08)}
     .modal-specs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:28px}
     .modal-spec{background:var(--surface);padding:16px}
     .modal-spec-key{font-size:.68rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:4px}
@@ -377,6 +385,7 @@
       <div class="modal-brand" id="modalBrand"></div>
       <div class="modal-name" id="modalName"></div>
       <p class="modal-desc" id="modalDesc"></p>
+      <button class="modal-desc-toggle" id="modalDescToggle" onclick="toggleModalDesc()">Показати більше ↓</button>
       <div class="modal-specs-grid" id="modalSpecs"></div>
       <div class="modal-footer">
         <div>
@@ -413,7 +422,7 @@
       <li><a id="footerPhone" href="tel:+380501234567">+38 (050) 123-45-67</a></li>
       <li><a id="footerAddr" href="#">м. Київ, вул. Авто 1</a></li>
       <li><a id="footerHours" href="#">Пн–Нд: 9:00–20:00</a></li>
-      <li><a id="footerEmail" href="mailto:info@autopark.ua">info@autopark.ua</a></li>
+      <li><a id="footerEmail" href="/cdn-cgi/l/email-protection#cea7a0a8a18eafbbbaa1beafbca5e0bbaf"><span class="__cf_email__" data-cfemail="4c25222a230c2d3938233c2d3e2762392d">[email&#160;protected]</span></a></li>
     </ul>
   </div>
 </footer>
@@ -423,7 +432,7 @@
 </div>
 <div class="belarix-bar">Зроблено в <a href="https://belarix-agency.com/" target="_blank" rel="noopener">Belarix Agency</a></div>
 
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <script>
 'use strict';
@@ -608,7 +617,12 @@ function renderCards(cars) {
             <div class="car-price">${fmt(c.price)}</div>
             <div class="car-price-sub">Ціна включає ПДВ</div>
           </div>
-          <a class="btn-details" href="${url}">Детальніше</a>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn-share-card" onclick="shareCard(event,'${url}','${c.brand||''} ${c.model||''}')" title="Поділитись">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            </button>
+            <a class="btn-details" href="${url}">Детальніше</a>
+          </div>
         </div>
       </div>
     </div>`;
@@ -689,8 +703,20 @@ function openModal(key) {
 
   document.getElementById('modalBrand').textContent  = `${c.brand || ''} · ${c.year || ''}`;
   document.getElementById('modalName').textContent   = c.model || '—';
-  document.getElementById('modalDesc').textContent   = c.desc  || '';
   document.getElementById('modalPrice').textContent  = fmt(c.price);
+
+  // Description with smooth expand
+  const descEl   = document.getElementById('modalDesc');
+  const toggleEl = document.getElementById('modalDescToggle');
+  descEl.textContent = c.desc || '';
+  descEl.classList.remove('expanded');
+  if (c.desc && c.desc.length > 200) {
+    toggleEl.style.display = 'block';
+    toggleEl.textContent = 'Показати більше ↓';
+  } else {
+    toggleEl.style.display = 'none';
+    descEl.style.maxHeight = '';
+  }
 
   const specs = {
     'Рік': String(c.year || ''), 'Пробіг': c.mileage || '',
@@ -705,6 +731,13 @@ function openModal(key) {
   document.getElementById('modalOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
+
+function toggleModalDesc() {
+  const descEl   = document.getElementById('modalDesc');
+  const toggleEl = document.getElementById('modalDescToggle');
+  const expanded = descEl.classList.toggle('expanded');
+  toggleEl.textContent = expanded ? 'Сховати ↑' : 'Показати більше ↓';
+}
 function closeModal() {
   document.getElementById('modalOverlay').classList.remove('open');
   document.body.style.overflow = '';
@@ -712,7 +745,25 @@ function closeModal() {
 }
 function closeModalOnBg(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
 
-// ── Favourites ────────────────────────────
+// ── Share card ────────────────────────────
+async function shareCard(e, relUrl, title) {
+  e.preventDefault();
+  e.stopPropagation();
+  const url = location.origin + relUrl;
+  if (navigator.share) {
+    try { await navigator.share({ title: title + ' — АВТОПАРК', url }); return; } catch(_) {}
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('✅ Посилання скопійовано!');
+  } catch(_) {
+    const ta = document.createElement('textarea');
+    ta.value = url; ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('✅ Посилання скопійовано!');
+  }
+}
 function toggleFav(e, key) {
   e.stopPropagation();
   if (favorites.has(key)) { favorites.delete(key); showToast('Видалено з обраного'); }
@@ -748,13 +799,4 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight') lbMove({ stopPropagation:()=>{} }, 1);
 });
 
-// Prevent double-tap zoom on mobile
-let _idxLastTap = 0;
-document.addEventListener('touchend', function(e) {
-  const now = Date.now();
-  if (now - _idxLastTap < 300) e.preventDefault();
-  _idxLastTap = now;
-}, { passive: false });
-</script>
-</body>
-</html>
+// Prevent double-ta

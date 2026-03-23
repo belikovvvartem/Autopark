@@ -478,7 +478,13 @@
             <select class="tfi" id="actFilter" onchange="renderActivity()" style="min-width:150px">
               <option value="">Усі адміністратори</option>
             </select>
-            <button class="ab" onclick="document.getElementById('actFilter').value='';renderActivity()">✕</button>
+            <select class="tfi" id="actDayFilter" onchange="renderActivity()" style="min-width:120px">
+              <option value="">Всі дні</option>
+              <option value="today">Сьогодні</option>
+              <option value="yesterday">Вчора</option>
+              <option value="week">Цей тиждень</option>
+            </select>
+            <button class="ab" onclick="document.getElementById('actFilter').value='';document.getElementById('actDayFilter').value='';renderActivity()">✕</button>
           </div>
           <div id="actList"><div class="no-rows">Завантаження…</div></div>
         </div>
@@ -816,6 +822,7 @@ const PERM_DEFS = [
   {key:'canStatus',   label:'Змінювати статус'},
   {key:'canSettings', label:'Налаштування'},
   {key:'canAdmins',   label:'Управління адмінами'},
+  {key:'canContacts', label:'Перегляд зв\'язку'},
 ];
 
 function initApp(_auth, _db) {
@@ -879,22 +886,27 @@ async function initAdminData(uid) {
   // Subscribe for realtime permission changes — stored separately, never touched by stopListeners()
   _myAdminRef = db.ref('admins/' + uid);
   _myAdminRef.on('value', function(snap) {
-    if (!snap.val() || !currentUser) return;
+    // If record is gone or marked revoked — kick this session immediately
+    if (!snap.val() || snap.val().revoked) {
+      doLogout();
+      showToast('⛔ Ваш акаунт було видалено', 'error');
+      return;
+    }
+    if (!currentUser) return;
     const updated = snap.val();
     const prevPerms = JSON.stringify(currentAdmin?.perms || {});
     const prevRole  = currentAdmin?.role || '';
     currentAdmin = updated;
     const newPerms = JSON.stringify(updated.perms || {});
     const newRole  = updated.role || '';
-    // Always re-apply perms and re-render table when anything changes
     if (prevPerms !== newPerms || prevRole !== newRole) {
       applyPerms();
       renderTable();
       showToast('⚠️ Ваші права змінено', 'info');
-      // Redirect off locked page immediately — use navTo (no DB re-check)
       const pg = document.querySelector('.page.active')?.id;
       if (pg === 'page-settings' && !hasPerm('canSettings')) navTo('dashboard');
       if (pg === 'page-admins'   && !hasPerm('canAdmins'))   navTo('dashboard');
+      if (pg === 'page-contacts' && !hasPerm('canContacts')) navTo('dashboard');
     }
     updateSidebarUser();
   });
@@ -936,9 +948,10 @@ function applyPerms() {
   // Desktop sidebar locks
   document.getElementById('nav-settings')?.classList.toggle('locked', !hasPerm('canSettings'));
   document.getElementById('nav-admins')?.classList.toggle('locked',   !hasPerm('canAdmins'));
-  // Mobile nav locks
+  document.getElementById('nav-contacts')?.classList.toggle('locked', !hasPerm('canContacts'));
   document.getElementById('mob-settings')?.classList.toggle('locked', !hasPerm('canSettings'));
   document.getElementById('mob-admins')?.classList.toggle('locked',   !hasPerm('canAdmins'));
+  document.getElementById('mob-contacts')?.classList.toggle('locked', !hasPerm('canContacts'));
   // Add button
   const b = document.getElementById('btnAdd');
   if (b) b.style.display = hasPerm('canAdd') ? '' : 'none';
@@ -1007,13 +1020,19 @@ function startListeners() {
   const actRef = db.ref('activity');
   actRef.on('value', function(snap) {
     ACTIVITY = [];
+    const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
+    const cutoff = Date.now() - THREE_DAYS;
     snap.forEach(function(child) {
-      var a = child.val();
+      const a = child.val();
       a._key = child.key;
+      // Auto-delete entries older than 3 days
+      if ((a.ts || 0) < cutoff) {
+        db.ref('activity/' + child.key).remove().catch(() => {});
+        return; // skip adding to list
+      }
       ACTIVITY.push(a);
     });
     ACTIVITY.sort(function(a, b) { return (b.ts || 0) - (a.ts || 0); });
-    ACTIVITY = ACTIVITY.slice(0, 60);
     renderActivity();
     populateActFilter();
   });
@@ -1068,6 +1087,7 @@ function syncMobNav(el) {
 async function showPage(id, el) {
   if (id === 'settings') { if (!(await verifyPerm('canSettings'))) return; }
   if (id === 'admins')   { if (!(await verifyPerm('canAdmins')))   return; }
+  if (id === 'contacts') { if (!(await verifyPerm('canContacts'))) return; }
 
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
@@ -1209,19 +1229,37 @@ function populateActFilter() {
 }
 
 function renderActivity() {
-  const list   = document.getElementById('actList');
-  const filter = document.getElementById('actFilter')?.value || '';
-  const items  = filter ? ACTIVITY.filter(a => a.adminName === filter) : ACTIVITY;
-  if (!items.length) { list.innerHTML = '<div class="no-rows">Поки що немає дій</div>'; return; }
-  list.innerHTML = items.slice(0, 15).map(a => `
-    <div class="act-item">
-      <div class="act-dot" style="background:${a.color || '#888'}"></div>
+  const list      = document.getElementById('actList');
+  const adminFil  = document.getElementById('actFilter')?.value || '';
+  const dayFil    = document.getElementById('actDayFilter')?.value || '';
+
+  const now   = Date.now();
+  const sod   = new Date(); sod.setHours(0,0,0,0); // start of today
+  const sody  = sod.getTime() - 86400000;           // start of yesterday
+
+  let items = ACTIVITY;
+  if (adminFil) items = items.filter(a => a.adminName === adminFil);
+  if (dayFil === 'today')     items = items.filter(a => (a.ts||0) >= sod.getTime());
+  if (dayFil === 'yesterday') items = items.filter(a => (a.ts||0) >= sody && (a.ts||0) < sod.getTime());
+  if (dayFil === 'week')      items = items.filter(a => (a.ts||0) >= sod.getTime() - 6*86400000);
+
+  if (!items.length) { list.innerHTML = '<div class="no-rows">Немає дій за обраний період</div>'; return; }
+
+  list.innerHTML = items.slice(0, 30).map(a => {
+    // Format date label
+    const ts = a.ts || 0;
+    let dateLabel = '';
+    if (ts >= sod.getTime()) dateLabel = 'Сьогодні';
+    else if (ts >= sody) dateLabel = 'Вчора';
+    else dateLabel = new Date(ts).toLocaleDateString('uk-UA', {day:'2-digit', month:'2-digit'});
+    return `<div class="act-item">
+      <div class="act-dot" style="background:${a.color||'#888'}"></div>
       <div style="flex:1">
         <div class="act-msg">${a.msg}</div>
-        <div class="act-meta"><span class="act-admin">${a.adminName || '?'}</span> · <span>${a.timeLabel || ''}</span></div>
+        <div class="act-meta"><span class="act-admin">${a.adminName||'?'}</span> · <span>${dateLabel}, ${a.timeLabel||''}</span></div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 // ═══════════════════════════════════════════
@@ -1689,8 +1727,20 @@ async function confirmDelete() {
   } else if (delType === 'admin' && delAdminUid) {
     if (!(await verifyPerm('canAdmins'))) { closeConfirm(); return; }
     const name = ADMINS[delAdminUid]?.name || delAdminUid;
-    try { await db.ref('admins/'+delAdminUid).remove(); logAct(`🗑️ Видалено адміна <strong>${name}</strong>`,'#ff4444'); showToast('Адміна видалено','error'); }
-    catch(e) { showToast('Помилка: '+e.message,'error'); }
+    try {
+      // 1. Mark as revoked in DB — any active session will see this and be kicked
+      await db.ref('admins/' + delAdminUid + '/revoked').set(true);
+      // 2. Remove from DB (this also triggers the perm watcher on their device)
+      await db.ref('admins/' + delAdminUid).remove();
+      // 3. Try to delete from Firebase Auth via API route (best effort)
+      await fetch('/api/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: delAdminUid }),
+      }).catch(() => {}); // non-blocking
+      logAct(`🗑️ Видалено адміна <strong>${name}</strong>`, '#ff4444');
+      showToast('Адміна видалено', 'error');
+    } catch(e) { showToast('Помилка: ' + e.message, 'error'); }
   }
   closeConfirm();
 }
@@ -1748,8 +1798,13 @@ async function updPerm(input) {
 
 async function askDelAdmin(uid) {
   if (!(await verifyPerm('canAdmins'))) return;
-  delType='admin'; delAdminUid=uid; delKey=null;
-  document.getElementById('cText').textContent = `Видалити адміна "${ADMINS[uid]?.name||uid}"?`;
+  const a = ADMINS[uid];
+  delType = 'admin'; delAdminUid = uid; delKey = null;
+  document.getElementById('c-icon') && (document.getElementById('c-icon').textContent = '👤');
+  document.getElementById('cTitle') && (document.getElementById('cTitle').textContent = 'Видалити адміна?');
+  document.getElementById('cText').innerHTML =
+    `<strong>${a?.name || uid}</strong><br><span style="font-size:.8rem;color:var(--muted)">${a?.email || ''}</span><br><br>` +
+    `<span style="color:var(--red);font-size:.8rem">Акаунт буде видалено з Firebase Auth.<br>Активні сесії будуть заблоковані.</span>`;
   document.getElementById('confirmOv').classList.add('open');
 }
 
