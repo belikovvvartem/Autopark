@@ -1732,12 +1732,12 @@ async function confirmDelete() {
       await db.ref('admins/' + delAdminUid + '/revoked').set(true);
       // 2. Remove from DB (this also triggers the perm watcher on their device)
       await db.ref('admins/' + delAdminUid).remove();
-      // 3. Try to delete from Firebase Auth via API route (best effort)
-      await fetch('/api/delete-user', {
+      // 3. Try to delete from Firebase Auth via API route (best effort, non-blocking)
+      fetch('/api/delete-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uid: delAdminUid }),
-      }).catch(() => {}); // non-blocking
+      }).catch(() => {}); // completely silent - DB revoked flag is the primary mechanism
       logAct(`🗑️ Видалено адміна <strong>${name}</strong>`, '#ff4444');
       showToast('Адміна видалено', 'error');
     } catch(e) { showToast('Помилка: ' + e.message, 'error'); }
