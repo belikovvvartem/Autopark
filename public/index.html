@@ -422,7 +422,7 @@
       <li><a id="footerPhone" href="tel:+380501234567">+38 (050) 123-45-67</a></li>
       <li><a id="footerAddr" href="#">м. Київ, вул. Авто 1</a></li>
       <li><a id="footerHours" href="#">Пн–Нд: 9:00–20:00</a></li>
-      <li><a id="footerEmail" href="mailto:info@autopark.ua">info@autopark.ua</a></li>
+      <li><a id="footerEmail" href="/cdn-cgi/l/email-protection#234a4d454c634256574c534251480d5642"><span class="__cf_email__" data-cfemail="fe97909891be9f8b8a918e9f8c95d08b9f">[email&#160;protected]</span></a></li>
     </ul>
   </div>
 </footer>
@@ -432,7 +432,7 @@
 </div>
 <div class="belarix-bar">Зроблено в <a href="https://belarix-agency.com/" target="_blank" rel="noopener">Belarix Agency</a></div>
 
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <script>
 'use strict';
@@ -618,7 +618,8 @@ function renderCards(cars) {
             <div class="car-price-sub">Ціна включає ПДВ</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
-            <button class="btn-share-card" onclick="shareCard(event,'${url}','${c.brand||''} ${c.model||''}')" title="Поділитись">
+            <button class="btn-share-card" data-url="${url}" data-title="${(c.brand||'') + ' ' + (c.model||'')}"
+              onclick="shareCard(event,this.dataset.url,this.dataset.title)" title="Поділитись">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
             </button>
             <a class="btn-details" href="${url}">Детальніше</a>
@@ -799,4 +800,13 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight') lbMove({ stopPropagation:()=>{} }, 1);
 });
 
-// Prevent double-ta
+// Prevent double-tap zoom on mobile
+let _idxLastTap = 0;
+document.addEventListener('touchend', function(e) {
+  const now = Date.now();
+  if (now - _idxLastTap < 300) e.preventDefault();
+  _idxLastTap = now;
+}, { passive: false });
+</script>
+</body>
+</html>

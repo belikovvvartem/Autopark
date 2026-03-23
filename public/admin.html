@@ -928,17 +928,20 @@ async function verifyPerm(key) {
   try {
     const snap = await db.ref('admins/' + currentUser.uid).once('value');
     const data = snap.val();
-    if (!data) { showToast('⛔ Запис адміна не знайдено', 'error'); return false; }
-    // Sync local cache so UI also updates
+    // Admin was deleted or revoked
+    if (!data || data.revoked) {
+      doLogout();
+      showToast('⛔ Ваш акаунт було видалено', 'error');
+      return false;
+    }
+    // Sync local cache
     currentAdmin = data;
     applyPerms();
-    // Superadmin always passes
     if (data.role === 'superadmin') return true;
-    // Check specific permission
     if (data.perms && data.perms[key] === true) return true;
     showToast('⛔ Немає доступу: ' + (PERM_DEFS.find(p => p.key === key)?.label || key), 'error');
     return false;
-  } catch (e) {
+  } catch(e) {
     showToast('⛔ Помилка перевірки прав: ' + e.message, 'error');
     return false;
   }
@@ -1085,6 +1088,13 @@ function syncMobNav(el) {
 }
 
 async function showPage(id, el) {
+  // Check user is still alive (not deleted/revoked) for every page switch
+  if (currentUser) {
+    const snap = await db.ref('admins/' + currentUser.uid).once('value').catch(() => null);
+    const data = snap?.val();
+    if (!data || data.revoked) { doLogout(); showToast('⛔ Ваш акаунт було видалено', 'error'); return; }
+    currentAdmin = data; applyPerms();
+  }
   if (id === 'settings') { if (!(await verifyPerm('canSettings'))) return; }
   if (id === 'admins')   { if (!(await verifyPerm('canAdmins')))   return; }
   if (id === 'contacts') { if (!(await verifyPerm('canContacts'))) return; }
@@ -1846,7 +1856,17 @@ async function saveAdmin() {
     logAct(`👤 Додано адміна <strong>${name}</strong>`, '#ff8c42');
     showToast(name + ' додано ✓','success');
     closeAdminDrawer();
-  } catch(e) { showToast('Помилка: '+e.message,'error'); }
+  } catch(e) {
+    const msgs = {
+      'auth/email-already-in-use': 'Цей email вже використовується',
+      'auth/invalid-email': 'Невірний формат email',
+      'auth/weak-password': 'Пароль надто простий (мін. 6 символів)',
+      'auth/operation-not-allowed': 'Email/Password вхід не увімкнено у Firebase Console → Authentication → Sign-in method',
+      'auth/network-request-failed': 'Помилка мережі',
+    };
+    const code = e.code || '';
+    showToast('Помилка: ' + (msgs[code] || e.message), 'error');
+  }
   finally { btn.disabled=false; btn.innerHTML='💾 Створити'; }
 }
 
