@@ -886,10 +886,13 @@ async function initAdminData(uid) {
   // Subscribe for realtime permission changes — stored separately, never touched by stopListeners()
   _myAdminRef = db.ref('admins/' + uid);
   _myAdminRef.on('value', function(snap) {
-    // If record is gone or marked revoked — kick this session immediately
+    // If MY OWN record is gone or revoked — kick this session
     if (!snap.val() || snap.val().revoked) {
-      doLogout();
-      showToast('⛔ Ваш акаунт було видалено', 'error');
+      // Small delay so any pending writes from this device can complete first
+      setTimeout(() => {
+        doLogout();
+        showToast('⛔ Ваш акаунт було видалено', 'error');
+      }, 500);
       return;
     }
     if (!currentUser) return;
@@ -928,13 +931,11 @@ async function verifyPerm(key) {
   try {
     const snap = await db.ref('admins/' + currentUser.uid).once('value');
     const data = snap.val();
-    // Admin was deleted or revoked
     if (!data || data.revoked) {
-      doLogout();
       showToast('⛔ Ваш акаунт було видалено', 'error');
+      setTimeout(() => doLogout(), 300);
       return false;
     }
-    // Sync local cache
     currentAdmin = data;
     applyPerms();
     if (data.role === 'superadmin') return true;
@@ -1737,20 +1738,16 @@ async function confirmDelete() {
   } else if (delType === 'admin' && delAdminUid) {
     if (!(await verifyPerm('canAdmins'))) { closeConfirm(); return; }
     const name = ADMINS[delAdminUid]?.name || delAdminUid;
+    const uidToDelete = delAdminUid; // capture before any async ops
     try {
-      // 1. Mark as revoked in DB — any active session will see this and be kicked
-      await db.ref('admins/' + delAdminUid + '/revoked').set(true);
-      // 2. Remove from DB (this also triggers the perm watcher on their device)
-      await db.ref('admins/' + delAdminUid).remove();
-      // 3. Try to delete from Firebase Auth via API route (best effort, non-blocking)
-      fetch('/api/delete-user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid: delAdminUid }),
-      }).catch(() => {}); // completely silent - DB revoked flag is the primary mechanism
+      // Remove from DB — the realtime listener on the deleted admin's device
+      // will receive null and call doLogout() automatically
+      await db.ref('admins/' + uidToDelete).remove();
       logAct(`🗑️ Видалено адміна <strong>${name}</strong>`, '#ff4444');
       showToast('Адміна видалено', 'error');
-    } catch(e) { showToast('Помилка: ' + e.message, 'error'); }
+    } catch(e) {
+      showToast('Помилка видалення: ' + e.message, 'error');
+    }
   }
   closeConfirm();
 }
