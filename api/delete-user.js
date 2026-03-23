@@ -1,34 +1,63 @@
 // api/delete-user.js
-// Deletes a Firebase Auth user via Firebase Auth REST API.
-// Uses FIREBASE_API_KEY (already in env vars) — no service account needed.
-// NOTE: This requires a valid Firebase ID token from an admin user to authorize.
-// If deletion fails, it's non-blocking — the user is already kicked via DB revoked flag.
+// Deletes a Firebase Auth user by UID using Firebase Admin SDK.
+//
+// Required Vercel env var:
+//   FIREBASE_SERVICE_ACCOUNT = full JSON content of Firebase service account key
+//
+// How to get service account key:
+//   Firebase Console → Project Settings → Service Accounts → Generate new private key
+//   Copy the entire JSON content into Vercel env var FIREBASE_SERVICE_ACCOUNT
+
+let adminApp = null;
+
+function getAdmin() {
+  if (adminApp) return adminApp;
+  const admin = require('firebase-admin');
+  if (admin.apps.length) {
+    adminApp = admin;
+    return adminApp;
+  }
+  const svcRaw = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (!svcRaw) throw new Error('FIREBASE_SERVICE_ACCOUNT env var not set');
+  const svc = JSON.parse(svcRaw);
+  admin.initializeApp({ credential: admin.credential.cert(svc) });
+  adminApp = admin;
+  return adminApp;
+}
 
 module.exports = async function handler(req, res) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-  
-    if (req.method !== 'POST') {
-      return res.status(405).json({ error: 'Method not allowed' });
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const { uid } = req.body || {};
+  if (!uid) {
+    return res.status(400).json({ error: 'Missing uid' });
+  }
+
+  try {
+    const admin = getAdmin();
+    await admin.auth().deleteUser(uid);
+    console.log('Deleted Firebase Auth user:', uid);
+    return res.status(200).json({ ok: true });
+  } catch (e) {
+    console.error('delete-user error:', e.code, e.message);
+
+    // User not found — already deleted, treat as success
+    if (e.code === 'auth/user-not-found') {
+      return res.status(200).json({ ok: true, note: 'user not found' });
     }
-  
-    // Parse body (Vercel auto-parses JSON when Content-Type is application/json)
-    const body = req.body || {};
-    const { uid, idToken } = body;
-  
-    if (!uid) {
-      return res.status(400).json({ error: 'Missing uid' });
+
+    // Service account not configured
+    if (e.message && e.message.includes('FIREBASE_SERVICE_ACCOUNT')) {
+      return res.status(200).json({
+        ok: false,
+        error: 'Service account not configured. Add FIREBASE_SERVICE_ACCOUNT to Vercel env vars.',
+      });
     }
-  
-    const apiKey = process.env.FIREBASE_API_KEY;
-    if (!apiKey) {
-      // Non-critical — Firebase key not configured
-      return res.status(200).json({ ok: true, skipped: true, reason: 'no_api_key' });
-    }
-  
-    // Without Firebase Admin SDK we can't delete arbitrary users via REST API.
-    // The DB-based kick (revoked flag) is the primary mechanism.
-    // This endpoint exists for future Admin SDK integration.
-    // Return 200 so the admin panel doesn't show an error.
-    console.log('delete-user called for uid:', uid, '— DB revoked flag is the primary kick mechanism');
-    return res.status(200).json({ ok: true, note: 'User kicked via DB revoked flag' });
-  };
+
+    return res.status(500).json({ ok: false, error: e.message });
+  }
+};

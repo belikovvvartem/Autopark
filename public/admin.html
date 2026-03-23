@@ -1089,13 +1089,6 @@ function syncMobNav(el) {
 }
 
 async function showPage(id, el) {
-  // Check user is still alive (not deleted/revoked) for every page switch
-  if (currentUser) {
-    const snap = await db.ref('admins/' + currentUser.uid).once('value').catch(() => null);
-    const data = snap?.val();
-    if (!data || data.revoked) { doLogout(); showToast('⛔ Ваш акаунт було видалено', 'error'); return; }
-    currentAdmin = data; applyPerms();
-  }
   if (id === 'settings') { if (!(await verifyPerm('canSettings'))) return; }
   if (id === 'admins')   { if (!(await verifyPerm('canAdmins')))   return; }
   if (id === 'contacts') { if (!(await verifyPerm('canContacts'))) return; }
@@ -1738,13 +1731,29 @@ async function confirmDelete() {
   } else if (delType === 'admin' && delAdminUid) {
     if (!(await verifyPerm('canAdmins'))) { closeConfirm(); return; }
     const name = ADMINS[delAdminUid]?.name || delAdminUid;
-    const uidToDelete = delAdminUid; // capture before any async ops
+    const uidToDelete = delAdminUid;
     try {
-      // Remove from DB — the realtime listener on the deleted admin's device
-      // will receive null and call doLogout() automatically
+      // 1. Remove from Realtime Database
       await db.ref('admins/' + uidToDelete).remove();
+
+      // 2. Delete from Firebase Authentication via Admin SDK
+      try {
+        const res = await fetch('/api/delete-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uid: uidToDelete }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast(`${name} видалено з Auth ✓`, 'success');
+        } else {
+          showToast(`DB видалено. Auth: ${data.error || 'помилка'}`, 'info');
+        }
+      } catch(_) {
+        showToast(`${name} видалено з DB (Auth — вручну)`, 'info');
+      }
+
       logAct(`🗑️ Видалено адміна <strong>${name}</strong>`, '#ff4444');
-      showToast('Адміна видалено', 'error');
     } catch(e) {
       showToast('Помилка видалення: ' + e.message, 'error');
     }
