@@ -66,6 +66,7 @@
       color:var(--text);padding:13px 16px;font-family:var(--font-body);font-size:.9rem;transition:border-color .2s}
     .cb-input:focus{outline:none;border-color:var(--accent)}
     .cb-input.err{border-color:var(--red)}
+    .cb-input.valid{border-color:rgba(46,204,113,.5)}
     .cb-btn{background:var(--accent);color:#000;border:none;padding:13px 28px;
       font-family:var(--font-body);font-weight:800;font-size:.88rem;letter-spacing:1px;
       text-transform:uppercase;cursor:pointer;transition:all .2s;white-space:nowrap}
@@ -163,8 +164,13 @@
     <div class="cb-title">Передзво<span>ніть мені</span></div>
     <div class="cb-sub">Залиште номер телефону — ми зателефонуємо вам найближчим часом</div>
     <div class="cb-field">
-      <input class="cb-input" type="tel" id="cbPhone" placeholder="+380 XX XXX XX XX"
-        maxlength="16" oninput="fmtPhone(this)" onkeydown="if(event.key==='Enter')sendCb()"/>
+      <input class="cb-input" type="tel" id="cbPhone"
+        placeholder="+380 XX XXX XX XX"
+        maxlength="16"
+        oninput="fmtPhone(this)"
+        onkeydown="guardPlus(event,this)"
+        onfocus="initPhone(this)"
+        onpaste="setTimeout(()=>fmtPhone(this),0)"/>
       <button class="cb-btn" id="cbBtn" onclick="sendCb()">📲 Передзвоніть мені</button>
     </div>
     <div class="cb-err" id="cbErr"></div>
@@ -195,6 +201,9 @@ const RATE_MS  = 60000; // 1 request per minute
   firebase.initializeApp(data.firebase);
   db = firebase.database();
   db.ref('settings').on('value', snap => applySettings(snap.val() || {}));
+
+  // Pre-fill phone with +380
+  initPhone(document.getElementById('cbPhone'));
 })();
 
 function applySettings(s) {
@@ -227,13 +236,43 @@ function applySettings(s) {
   }
 }
 
-// Format phone input — digits and leading +
+// ── Phone input: + always first, +380 default ──────────
+function initPhone(el) {
+  if (!el.value || el.value === '+') el.value = '+380';
+  const len = el.value.length;
+  el.setSelectionRange(len, len);
+}
+
+function guardPlus(event, el) {
+  // Prevent deleting the leading +
+  const pos = el.selectionStart;
+  const isCollapsed = el.selectionStart === el.selectionEnd;
+  if ((event.key === 'Backspace' && pos <= 1 && isCollapsed) ||
+      (event.key === 'Delete'    && pos === 0)) {
+    event.preventDefault();
+    return;
+  }
+  if (event.key === 'Enter') sendCb();
+}
+
 function fmtPhone(el) {
-  let v = el.value.replace(/[^\d+]/g, '');
-  if (v && v[0] !== '+') v = '+' + v;
-  const d = v.replace(/\D/g,'');
-  if (d.length > 13) v = '+' + d.slice(0,13);
-  el.value = v;
+  let raw = el.value;
+  // Ensure starts with +
+  if (!raw.startsWith('+')) raw = '+' + raw.replace(/^\+*/,'');
+  // Only digits after +
+  let digits = raw.slice(1).replace(/\D/g,'');
+  // Max 13 digits after + (e.g. +380XXXXXXXXX = 12, international max 15)
+  if (digits.length > 13) digits = digits.slice(0,13);
+  el.value = '+' + digits;
+  // Visual validation
+  const len = digits.length;
+  if (len === 0) {
+    el.classList.remove('err','valid');
+  } else if (len < 7) {
+    el.classList.add('err'); el.classList.remove('valid');
+  } else {
+    el.classList.remove('err'); el.classList.add('valid');
+  }
 }
 
 async function sendCb() {
@@ -247,11 +286,11 @@ async function sendCb() {
   ok.style.display  = 'none';
   input.classList.remove('err');
 
-  // Validate: min 7 digits
+  // Validate: must start with +, min 7 digits
   const digits = phone.replace(/\D/g,'');
-  if (!phone || digits.length < 7) {
+  if (!phone.startsWith('+') || digits.length < 7) {
     input.classList.add('err');
-    showErr('Введіть коректний номер телефону');
+    showErr('Введіть коректний номер (напр. +380XXXXXXXXX)');
     return;
   }
 
