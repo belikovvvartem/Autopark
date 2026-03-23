@@ -163,8 +163,8 @@
       flex-wrap:wrap;gap:12px;font-size:.82rem;color:var(--muted)}
     .page-footer a{color:var(--accent);text-decoration:none}
     .belarix-bar{background:#080808;border-top:1px solid rgba(255,255,255,.04);
-      padding:10px;text-align:center;font-size:.72rem;color:#555}
-    .belarix-bar a{color:#888;text-decoration:none;transition:color .2s}
+      padding:12px;text-align:center;font-size:.82rem;color:#666}
+    .belarix-bar a{color:#999;text-decoration:none;font-weight:600;transition:color .2s}
     .belarix-bar a:hover{color:var(--accent)}
 
     /* RESPONSIVE */
@@ -566,6 +566,14 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowLeft')   lbMove({ stopPropagation:()=>{} }, -1);
   if (e.key === 'ArrowRight')  lbMove({ stopPropagation:()=>{} }, 1);
 });
+
+// Prevent double-tap zoom on mobile
+let _carLastTap = 0;
+document.addEventListener('touchend', function(e) {
+  const now = Date.now();
+  if (now - _carLastTap < 300) e.preventDefault();
+  _carLastTap = now;
+}, { passive: false });
 </script>
 </body>
 </html>
