@@ -151,6 +151,7 @@
     .fgroup input,.fgroup select,.fgroup textarea{background:var(--surface);color:var(--text);border:1px solid var(--border2);padding:9px 12px;font-family:var(--font-body);font-size:.85rem;transition:border-color .2s;width:100%}
     .fgroup input:focus,.fgroup select:focus,.fgroup textarea:focus{outline:none;border-color:var(--accent)}
     .fgroup select{appearance:none;cursor:pointer}
+    .fgroup input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a7882' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
     .fgroup textarea{resize:vertical;min-height:80px}
     .fgroup input.err,.fgroup select.err{border-color:var(--red)}
     .df{padding:18px 28px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;position:sticky;bottom:0;background:var(--card)}
@@ -617,18 +618,29 @@
         <div class="fs-title">Основна інформація</div>
         <div class="fg">
           <div class="fgroup"><label>Марка *</label>
-            <select id="fBrand"><option value="">— Оберіть —</option>
+            <input type="text" id="fBrand" placeholder="Введіть або оберіть марку" list="listBrand" autocomplete="off"/>
+            <datalist id="listBrand">
               <option>BMW</option><option>Mercedes</option><option>Audi</option><option>Toyota</option>
               <option>Volkswagen</option><option>Porsche</option><option>Lexus</option>
               <option>Land Rover</option><option>Volvo</option><option>Skoda</option>
               <option>Honda</option><option>Mazda</option><option>Ford</option>
-              <option>Hyundai</option><option>Kia</option>
-            </select></div>
+              <option>Hyundai</option><option>Kia</option><option>Nissan</option>
+              <option>Subaru</option><option>Mitsubishi</option><option>Jeep</option>
+              <option>Chevrolet</option><option>Tesla</option><option>Renault</option>
+              <option>Peugeot</option><option>Opel</option><option>Infiniti</option>
+              <option>Acura</option><option>Cadillac</option><option>Lincoln</option>
+            </datalist></div>
           <div class="fgroup"><label>Модель *</label><input type="text" id="fModel" placeholder="напр. 5 Series 530d"/></div>
-          <div class="fgroup"><label>Рік *</label><input type="number" id="fYear" min="1990" max="2026" placeholder="2023"/></div>
+          <div class="fgroup"><label>Рік *</label><input type="number" id="fYear" min="1990" max="2030" placeholder="2023"/></div>
           <div class="fgroup"><label>Ціна (USD) *</label><input type="number" id="fPrice" min="0" placeholder="35000"/></div>
           <div class="fgroup"><label>Тип кузова</label>
-            <select id="fType"><option>Седан</option><option>SUV</option><option>Купе</option><option>Хетчбек</option><option>Універсал</option><option>Кабріолет</option><option>Пікап</option></select></div>
+            <input type="text" id="fType" placeholder="Введіть або оберіть тип" list="listType" autocomplete="off"/>
+            <datalist id="listType">
+              <option>Седан</option><option>SUV</option><option>Купе</option>
+              <option>Хетчбек</option><option>Універсал</option><option>Кабріолет</option>
+              <option>Пікап</option><option>Мінівен</option><option>Лімузин</option>
+              <option>Родстер</option><option>Фастбек</option>
+            </datalist></div>
           <div class="fgroup"><label>Колір</label><input type="text" id="fColor" placeholder="Чорний"/></div>
         </div>
       </div>
@@ -639,9 +651,15 @@
           <div class="fgroup"><label>Потужність</label><input type="text" id="fPower" placeholder="286 к.с."/></div>
           <div class="fgroup"><label>Пробіг</label><input type="text" id="fMileage" placeholder="28 000 км"/></div>
           <div class="fgroup"><label>Коробка</label>
-            <select id="fGearbox"><option>Автомат</option><option>Механіка</option><option>Варіатор</option><option>Робот</option></select></div>
+            <input type="text" id="fGearbox" placeholder="Введіть або оберіть" list="listGearbox" autocomplete="off"/>
+            <datalist id="listGearbox">
+              <option>Автомат</option><option>Механіка</option><option>Варіатор</option><option>Робот</option>
+            </datalist></div>
           <div class="fgroup"><label>Привід</label>
-            <select id="fDrive"><option>Повний</option><option>Передній</option><option>Задній</option></select></div>
+            <input type="text" id="fDrive" placeholder="Введіть або оберіть" list="listDrive" autocomplete="off"/>
+            <datalist id="listDrive">
+              <option>Повний</option><option>Передній</option><option>Задній</option>
+            </datalist></div>
           <div class="fgroup"><label>Статус</label>
             <select id="fStatus"><option value="available">В наявності</option><option value="reserved">Зарезервовано</option><option value="sold">Продано</option></select></div>
         </div>
@@ -1605,7 +1623,13 @@ async function openDrawer(key = null) {
   editKey = key;
   document.getElementById('dTitle').innerHTML = key ? 'Редагувати <span>авто</span>' : 'Нове <span>авто</span>';
   ['fModel','fColor','fEngine','fPower','fMileage','fDesc','fVideo'].forEach(id => { const el=document.getElementById(id); if(el){el.value='';el.classList.remove('err')} });
-  ['fBrand','fType','fGearbox','fDrive','fStatus'].forEach(id => { const el=document.getElementById(id); if(el){el.selectedIndex=0;el.classList.remove('err')} });
+  ['fBrand','fType','fGearbox','fDrive','fStatus'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    // Reset both inputs and selects
+    if (el.tagName === 'SELECT') { el.selectedIndex = 0; } else { el.value = ''; }
+    el.classList.remove('err');
+  });
   document.getElementById('fYear').value=''; document.getElementById('fPrice').value='';
   const fi = document.getElementById('fileInput'); if (fi) fi.value = '';
   const prog = document.getElementById('uploadProgress'); if (prog) prog.style.display = 'none';
