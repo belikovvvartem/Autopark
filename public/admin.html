@@ -151,7 +151,7 @@
     .fgroup input,.fgroup select,.fgroup textarea{background:var(--surface);color:var(--text);border:1px solid var(--border2);padding:9px 12px;font-family:var(--font-body);font-size:.85rem;transition:border-color .2s;width:100%}
     .fgroup input:focus,.fgroup select:focus,.fgroup textarea:focus{outline:none;border-color:var(--accent)}
     .fgroup select{appearance:none;cursor:pointer}
-    .fgroup input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a7882' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+    .fgroup input[list]{padding-right:12px}
     .fgroup textarea{resize:vertical;min-height:80px}
     .fgroup input.err,.fgroup select.err{border-color:var(--red)}
     .df{padding:18px 28px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;position:sticky;bottom:0;background:var(--card)}
@@ -618,8 +618,8 @@
         <div class="fs-title">Основна інформація</div>
         <div class="fg">
           <div class="fgroup"><label>Марка *</label>
-            <input type="text" id="fBrand" placeholder="Введіть або оберіть марку" list="listBrand" autocomplete="off"/>
-            <datalist id="listBrand">
+            <select id="fBrand" onchange="customSelect(this,'fBrandCustom')">
+              <option value="">— Оберіть —</option>
               <option>BMW</option><option>Mercedes</option><option>Audi</option><option>Toyota</option>
               <option>Volkswagen</option><option>Porsche</option><option>Lexus</option>
               <option>Land Rover</option><option>Volvo</option><option>Skoda</option>
@@ -629,18 +629,22 @@
               <option>Chevrolet</option><option>Tesla</option><option>Renault</option>
               <option>Peugeot</option><option>Opel</option><option>Infiniti</option>
               <option>Acura</option><option>Cadillac</option><option>Lincoln</option>
-            </datalist></div>
+              <option value="__custom__">✏️ Інша марка…</option>
+            </select>
+            <input type="text" id="fBrandCustom" placeholder="Введіть назву марки" style="display:none;margin-top:6px"/></div>
           <div class="fgroup"><label>Модель *</label><input type="text" id="fModel" placeholder="напр. 5 Series 530d"/></div>
           <div class="fgroup"><label>Рік *</label><input type="number" id="fYear" min="1990" max="2030" placeholder="2023"/></div>
           <div class="fgroup"><label>Ціна (USD) *</label><input type="number" id="fPrice" min="0" placeholder="35000"/></div>
           <div class="fgroup"><label>Тип кузова</label>
-            <input type="text" id="fType" placeholder="Введіть або оберіть тип" list="listType" autocomplete="off"/>
-            <datalist id="listType">
+            <select id="fType" onchange="customSelect(this,'fTypeCustom')">
+              <option value="">— Оберіть —</option>
               <option>Седан</option><option>SUV</option><option>Купе</option>
               <option>Хетчбек</option><option>Універсал</option><option>Кабріолет</option>
               <option>Пікап</option><option>Мінівен</option><option>Лімузин</option>
               <option>Родстер</option><option>Фастбек</option>
-            </datalist></div>
+              <option value="__custom__">✏️ Інший тип…</option>
+            </select>
+            <input type="text" id="fTypeCustom" placeholder="Введіть тип кузова" style="display:none;margin-top:6px"/></div>
           <div class="fgroup"><label>Колір</label><input type="text" id="fColor" placeholder="Чорний"/></div>
         </div>
       </div>
@@ -651,15 +655,19 @@
           <div class="fgroup"><label>Потужність</label><input type="text" id="fPower" placeholder="286 к.с."/></div>
           <div class="fgroup"><label>Пробіг</label><input type="text" id="fMileage" placeholder="28 000 км"/></div>
           <div class="fgroup"><label>Коробка</label>
-            <input type="text" id="fGearbox" placeholder="Введіть або оберіть" list="listGearbox" autocomplete="off"/>
-            <datalist id="listGearbox">
+            <select id="fGearbox" onchange="customSelect(this,'fGearboxCustom')">
+              <option value="">— Оберіть —</option>
               <option>Автомат</option><option>Механіка</option><option>Варіатор</option><option>Робот</option>
-            </datalist></div>
+              <option value="__custom__">✏️ Інша…</option>
+            </select>
+            <input type="text" id="fGearboxCustom" placeholder="Введіть тип коробки" style="display:none;margin-top:6px"/></div>
           <div class="fgroup"><label>Привід</label>
-            <input type="text" id="fDrive" placeholder="Введіть або оберіть" list="listDrive" autocomplete="off"/>
-            <datalist id="listDrive">
+            <select id="fDrive" onchange="customSelect(this,'fDriveCustom')">
+              <option value="">— Оберіть —</option>
               <option>Повний</option><option>Передній</option><option>Задній</option>
-            </datalist></div>
+              <option value="__custom__">✏️ Інший…</option>
+            </select>
+            <input type="text" id="fDriveCustom" placeholder="Введіть тип приводу" style="display:none;margin-top:6px"/></div>
           <div class="fgroup"><label>Статус</label>
             <select id="fStatus"><option value="available">В наявності</option><option value="reserved">Зарезервовано</option><option value="sold">Продано</option></select></div>
         </div>
@@ -1626,9 +1634,13 @@ async function openDrawer(key = null) {
   ['fBrand','fType','fGearbox','fDrive','fStatus'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
-    // Reset both inputs and selects
     if (el.tagName === 'SELECT') { el.selectedIndex = 0; } else { el.value = ''; }
     el.classList.remove('err');
+  });
+  // Hide all custom inputs
+  ['fBrandCustom','fTypeCustom','fGearboxCustom','fDriveCustom'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.style.display = 'none'; el.value = ''; }
   });
   document.getElementById('fYear').value=''; document.getElementById('fPrice').value='';
   const fi = document.getElementById('fileInput'); if (fi) fi.value = '';
@@ -1641,13 +1653,14 @@ async function openDrawer(key = null) {
     document.getElementById('fModel').value   = c.model   || '';
     document.getElementById('fYear').value    = c.year    || '';
     document.getElementById('fPrice').value   = c.price   || '';
-    document.getElementById('fType').value    = c.type    || '';
+    setSelectVal('fBrand',   'fBrandCustom',   c.brand   || '');
+    setSelectVal('fType',    'fTypeCustom',    c.type    || '');
+    setSelectVal('fGearbox', 'fGearboxCustom', c.gearbox || '');
+    setSelectVal('fDrive',   'fDriveCustom',   c.drive   || '');
     document.getElementById('fColor').value   = c.color   || '';
     document.getElementById('fEngine').value  = c.engine  || '';
     document.getElementById('fPower').value   = c.power   || '';
     document.getElementById('fMileage').value = c.mileage || '';
-    document.getElementById('fGearbox').value = c.gearbox || '';
-    document.getElementById('fDrive').value   = c.drive   || '';
     document.getElementById('fStatus').value  = c.status  || 'available';
     document.getElementById('fDesc').value    = c.desc    || '';
     document.getElementById('fVideo').value   = c.videoUrl || '';
@@ -1663,30 +1676,83 @@ function closeDrawer() { document.getElementById('dov').classList.remove('open')
 function closeDovBg(e, ovId, closeFn) { if (e.target === document.getElementById(ovId)) window[closeFn](); }
 
 // ═══════════════════════════════════════════
+//  CUSTOM SELECT HELPER
+// ═══════════════════════════════════════════
+function customSelect(sel, customId) {
+  const customEl = document.getElementById(customId);
+  if (!customEl) return;
+  if (sel.value === '__custom__') {
+    customEl.style.display = 'block';
+    customEl.focus();
+  } else {
+    customEl.style.display = 'none';
+    customEl.value = '';
+  }
+}
+
+// Get value from a select+custom pair
+function getSelectVal(selectId, customId) {
+  const sel = document.getElementById(selectId);
+  const custom = document.getElementById(customId);
+  if (sel && sel.value === '__custom__') {
+    return custom ? custom.value.trim() : '';
+  }
+  return sel ? sel.value : '';
+}
+
+// Set value to a select+custom pair (used when editing)
+function setSelectVal(selectId, customId, value) {
+  if (!value) return;
+  const sel = document.getElementById(selectId);
+  const custom = document.getElementById(customId);
+  if (!sel) return;
+  // Check if value exists as an option
+  const exists = Array.from(sel.options).some(o => o.value === value && o.value !== '__custom__');
+  if (exists) {
+    sel.value = value;
+    if (custom) custom.style.display = 'none';
+  } else {
+    // Custom value
+    sel.value = '__custom__';
+    if (custom) {
+      custom.value = value;
+      custom.style.display = 'block';
+    }
+  }
+}
+
+// ═══════════════════════════════════════════
 //  SAVE CAR
 // ═══════════════════════════════════════════
 async function saveCar() {
   const permKey = editKey ? 'canEdit' : 'canAdd';
   if (!(await verifyPerm(permKey))) return;
 
-  const req = [['fBrand'],['fModel'],['fYear'],['fPrice']];
+  // Validate required fields (fBrand is a select now — use getSelectVal)
+  const brandVal = getSelectVal('fBrand','fBrandCustom');
+  const modelEl  = document.getElementById('fModel');
+  const yearEl   = document.getElementById('fYear');
+  const priceEl  = document.getElementById('fPrice');
   let ok = true;
-  req.forEach(([id]) => { const el=document.getElementById(id); if(!el.value.trim()){el.classList.add('err');ok=false}else el.classList.remove('err'); });
+  if (!brandVal) { document.getElementById('fBrand').classList.add('err'); ok = false; } else document.getElementById('fBrand').classList.remove('err');
+  if (!modelEl.value.trim()) { modelEl.classList.add('err'); ok = false; } else modelEl.classList.remove('err');
+  if (!yearEl.value.trim())  { yearEl.classList.add('err');  ok = false; } else yearEl.classList.remove('err');
+  if (!priceEl.value.trim()) { priceEl.classList.add('err'); ok = false; } else priceEl.classList.remove('err');
   if (!ok) { showToast('Заповніть обовʼязкові поля','error'); return; }
 
   const btn = document.getElementById('btnSave'); btn.disabled=true; btn.textContent='⏳ Збереження…';
   const data = {
-    brand:    document.getElementById('fBrand').value,
-    model:    document.getElementById('fModel').value,
-    year:     parseInt(document.getElementById('fYear').value),
-    price:    parseFloat(document.getElementById('fPrice').value),
-    type:     document.getElementById('fType').value,
+    brand:    brandVal,
+    model:    modelEl.value,
+    year:     parseInt(yearEl.value),
+    price:    parseFloat(priceEl.value),
+    type:     getSelectVal('fType','fTypeCustom'),
     color:    document.getElementById('fColor').value,
     engine:   document.getElementById('fEngine').value,
     power:    document.getElementById('fPower').value,
     mileage:  document.getElementById('fMileage').value,
-    gearbox:  document.getElementById('fGearbox').value,
-    drive:    document.getElementById('fDrive').value,
+    gearbox:  getSelectVal('fGearbox','fGearboxCustom'),
+    drive:    getSelectVal('fDrive','fDriveCustom'),
     status:   document.getElementById('fStatus').value,
     desc:     document.getElementById('fDesc').value,
     videoUrl: document.getElementById('fVideo').value.trim(),
